@@ -1,119 +1,3911 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#6d4aff">
-<title>Axess Chat V1</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#6d4aff">
+<title>Axess Chat V14</title>
+
 <style>
-:root{--p:#6d4aff;--bg:#f3f7fc;--card:#fff;--txt:#142033;--muted:#667085;--line:#dce5f0;--danger:#e53935;--ok:#18a558}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--txt)}button,input,textarea{font:inherit}button{border:0;cursor:pointer}input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--txt);outline:none}input:focus{border-color:var(--p);box-shadow:0 0 0 3px #6d4aff18}.hidden{display:none!important}.danger{color:var(--danger)}
-body.dark{--bg:#0b1020;--card:#151c2e;--txt:#eef2ff;--muted:#aab5ca;--line:#303b54}body.dark input{background:#10172a;color:var(--txt)}
-.auth{min-height:100vh;display:grid;place-items:center;padding:22px;background:linear-gradient(145deg,var(--bg),#e8f1ff)}body.dark .auth{background:radial-gradient(circle at top,#1d2a49,#0b1020 70%)}.auth-card{width:min(440px,100%);background:var(--card);border:1px solid var(--line);border-radius:30px;padding:28px;box-shadow:0 25px 80px #0002}.logo{width:72px;height:72px;border-radius:24px;background:var(--p);color:#fff;display:grid;place-items:center;font-size:35px;font-weight:900;margin:auto}.auth h1{text-align:center;margin:12px 0 5px}.sub{text-align:center;color:var(--muted);margin:0 0 22px}.form{display:grid;gap:10px}.primary{background:var(--p);color:#fff;padding:13px 16px;border-radius:14px;font-weight:800}.secondary{background:#edf2f8;color:var(--txt);padding:12px 15px;border-radius:14px}body.dark .secondary{background:#202a40;color:var(--txt)}.switch{text-align:center;color:var(--muted);font-size:14px;margin-top:15px}.switch button{background:none;color:var(--p);font-weight:800}.status{min-height:20px;text-align:center;font-size:13px;color:var(--danger)}
-.app{min-height:100vh}.top{height:68px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 max(14px,calc((100% - 1100px)/2));position:sticky;top:0;z-index:20}.brand{font-size:21px;font-weight:900;flex:1}.avatar{width:42px;height:42px;border-radius:50%;background:var(--p);color:#fff;display:grid;place-items:center;font-weight:900;overflow:hidden;flex:none}.avatar img{width:100%;height:100%;object-fit:cover}.icon{width:42px;height:42px;border-radius:13px;background:#eef3f9;color:var(--txt)}body.dark .icon{background:#202a40}.online{font-size:12px;color:var(--ok);font-weight:800;padding:6px 12px;background:#eaf8ef;border-radius:999px}body.dark .online{background:#123322}
-.main{width:min(1100px,100%);margin:auto;padding:16px}.search{display:flex;gap:9px;margin-bottom:10px}.search input{flex:1}.contacts{display:grid;gap:9px}.contact{display:flex;align-items:center;gap:12px;padding:13px;background:var(--card);border:1px solid var(--line);border-radius:18px;cursor:pointer}.contact:hover{border-color:var(--p)}.contact .grow{flex:1;min-width:0}.contact b{display:block}.contact small{color:var(--muted)}.empty{text-align:center;color:var(--muted);padding:35px 15px}
-.chat{position:fixed;inset:0;background:var(--bg);z-index:40;display:flex;flex-direction:column}.chat-head{height:68px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 12px}.chat-title{flex:1}.chat-title b{display:block}.chat-title small{color:var(--muted)}.messages{flex:1;overflow:auto;padding:15px;display:flex;flex-direction:column;gap:7px}.bubble{max-width:min(78%,520px);padding:10px 13px;border-radius:17px;background:var(--card);border:1px solid var(--line);white-space:pre-wrap;word-break:break-word}.bubble.me{align-self:flex-end;background:var(--p);color:#fff;border-color:var(--p);border-bottom-right-radius:5px}.bubble.other{align-self:flex-start;border-bottom-left-radius:5px}.composer{display:flex;gap:8px;padding:9px;background:var(--card);border-top:1px solid var(--line)}.composer input{flex:1}.send{background:var(--p);color:#fff;border-radius:14px;padding:0 18px;font-weight:800}
-.sheet{position:fixed;inset:0;background:#0007;z-index:60;display:flex;justify-content:flex-end}.panel{width:min(430px,100%);height:100%;overflow:auto;background:var(--card);padding:20px}.panel-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}.panel-head h2{flex:1;margin:0}.section{padding:16px 0;border-top:1px solid var(--line)}.section h3{margin:0 0 10px}.profile-big{display:flex;align-items:center;gap:12px;margin-bottom:12px}.big-avatar{width:74px;height:74px;border-radius:50%;background:var(--p);color:#fff;display:grid;place-items:center;font-size:25px;font-weight:900;overflow:hidden}.big-avatar img{width:100%;height:100%;object-fit:cover}.colors{display:flex;flex-wrap:wrap;gap:9px}.sw{width:30px;height:30px;border-radius:50%;border:3px solid transparent}.sw.active{outline:2px solid var(--txt)}
-@media(max-width:600px){.online{display:none}.main{padding:10px}.auth-card{padding:22px}.bubble{max-width:86%}}
+:root{
+  --p:#6d4aff;
+  --bg:#f3f7fc;
+  --card:#fff;
+  --txt:#142033;
+  --muted:#667085;
+  --line:#dce5f0;
+  --danger:#e53935;
+  --ok:#18a558;
+}
 
-.media-tools{display:flex;gap:7px;align-items:center}.tool{width:43px;height:43px;border-radius:14px;background:#edf2f8;color:var(--txt);font-size:20px}.tool.recording{background:#e53935;color:#fff}.composer{align-items:center}.attach-name{font-size:12px;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.media-preview{padding:8px 12px;background:var(--card);border-top:1px solid var(--line);display:none;align-items:center;gap:8px}.media-preview.show{display:flex}.media-preview img,.media-preview video{width:58px;height:58px;object-fit:cover;border-radius:10px}.media-preview audio{max-width:180px}.clear-media{margin-left:auto;border-radius:10px;padding:7px 10px;background:#fee;color:#b42318}.media-msg img,.media-msg video{display:block;max-width:280px;max-height:360px;border-radius:12px;margin-bottom:4px}.media-msg audio{max-width:260px}.voice-time{font-size:12px;color:var(--muted);margin-left:4px}.voice-msg{display:flex;align-items:center;gap:9px;min-width:230px}.voice-msg .voice-icon{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--p);color:#fff}.voice-msg audio{width:185px;height:38px}.profile-view{position:fixed;inset:0;background:#000b;z-index:100;display:grid;place-items:center;padding:20px}.profile-card{width:min(390px,100%);background:var(--card);border-radius:24px;padding:20px;text-align:center}.profile-large{width:190px;height:190px;border-radius:50%;margin:10px auto 15px;background:var(--p);overflow:hidden;display:grid;place-items:center;color:#fff;font-size:70px;font-weight:900}.profile-large img{width:100%;height:100%;object-fit:cover}.setting-item{border:1px solid var(--line);border-radius:16px;margin-top:10px;overflow:hidden}.setting-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;padding:15px;background:var(--card);color:var(--txt);text-align:left;font-weight:800}.setting-body{padding:14px;border-top:1px solid var(--line)}
-@media(max-width:600px){.tool{width:40px;height:40px}.media-msg img,.media-msg video{max-width:230px}}
-.avatar-btn{border:0;padding:0;cursor:pointer}.contact .avatar-btn{background:transparent}.blocked-tag{font-size:11px;color:var(--danger);font-weight:800}.unread-badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;font-weight:900}.notify-page{position:fixed;inset:0;background:var(--bg);z-index:30;transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column}.notify-page.open{transform:translateX(0)}.notify-head{height:68px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 14px}.notify-head h2{flex:1;margin:0;font-size:20px}.notification-list{overflow:auto;padding:14px}.notification{display:flex;gap:11px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:9px}.notification.unread{border-color:var(--p)}.notification .grow{flex:1}.swipe-hint{text-align:center;color:var(--muted);font-size:12px;padding:10px}
-.msg-row{display:flex;align-items:flex-end;gap:4px}.msg-row>div:first-child{flex:1}.msg-menu{border:0;background:transparent;opacity:.55;cursor:pointer;font-size:18px;padding:2px 5px}.deleted-msg{font-style:italic;opacity:.7} .voice-msg audio{display:none}.voice-player{display:flex;align-items:center;gap:8px;min-width:220px;max-width:280px}.voice-play{width:38px;height:38px;border-radius:50%;background:var(--p);color:#fff;display:grid;place-items:center;font-size:17px;flex:none}.voice-progress{flex:1;min-width:70px;height:7px;accent-color:var(--p);cursor:pointer}.voice-duration{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}.bubble.me .voice-duration{color:#eaf2ff}
-.voice-status{display:none;align-items:center;gap:9px;padding:7px 12px;background:var(--card);border-top:1px solid var(--line);font-size:13px;font-weight:800}.voice-status.show{display:flex}.voice-dot{width:10px;height:10px;border-radius:50%;background:#e53935;animation:pulseVoice 1s infinite}.voice-counter{font-variant-numeric:tabular-nums;color:var(--p)}@keyframes pulseVoice{50%{opacity:.25;transform:scale(.8)}}.media-actions{position:relative;display:flex;justify-content:flex-start;gap:8px;padding:7px 10px;background:var(--card);border-top:1px solid var(--line)}.media-actions .tool{width:auto;min-width:43px;padding:0 13px}.media-picker-menu{position:absolute;left:10px;bottom:52px;display:none;gap:7px;padding:8px;background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:0 12px 30px #0003;z-index:80}.media-picker-menu.show{display:flex}.media-picker-menu button{padding:10px 13px;border-radius:11px;background:#edf2f8;color:var(--txt);font-weight:700}body.dark .media-picker-menu button{background:#202a40}.composer{border-top:0}.send{min-width:110px}.send .send-arrow{font-size:16px;margin-left:5px}
-.composer{position:relative;display:flex;align-items:center;gap:7px;padding:8px;background:var(--card);border-top:1px solid var(--line)}.composer-tools{display:flex;align-items:center;gap:5px;position:relative;flex:none}.composer-tools .tool{width:42px;height:42px;padding:0}.composer input{min-width:0}.composer .send{width:44px;min-width:44px;height:42px;padding:0;font-size:21px;display:grid;place-items:center}.composer .send-arrow{margin:0}.media-picker-menu{left:0;bottom:49px}.media-actions{display:none!important}
-</style></head>
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  min-height:100%;
+  font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--txt)
+}
+
+button,input,textarea{font:inherit}
+button{border:0;cursor:pointer}
+
+input{
+  width:100%;
+  padding:13px 14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--card);
+  color:var(--txt);
+  outline:none
+}
+
+input:focus{
+  border-color:var(--p);
+  box-shadow:0 0 0 3px #6d4aff18
+}
+
+.hidden{display:none!important}
+.danger{color:var(--danger)}
+
+body.dark{
+  --bg:#0b1020;
+  --card:#151c2e;
+  --txt:#eef2ff;
+  --muted:#aab5ca;
+  --line:#303b54
+}
+
+body.dark input{
+  background:#10172a;
+  color:var(--txt)
+}
+
+/* AUTH */
+
+.auth{
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:22px;
+  background:linear-gradient(145deg,var(--bg),#e8f1ff)
+}
+
+body.dark .auth{
+  background:radial-gradient(circle at top,#1d2a49,#0b1020 70%)
+}
+
+.auth-card{
+  width:min(440px,100%);
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:30px;
+  padding:28px;
+  box-shadow:0 25px 80px #0002
+}
+
+.logo{
+  width:72px;
+  height:72px;
+  border-radius:24px;
+  background:var(--p);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  font-size:35px;
+  font-weight:900;
+  margin:auto
+}
+
+.auth h1{
+  text-align:center;
+  margin:12px 0 5px
+}
+
+.sub{
+  text-align:center;
+  color:var(--muted);
+  margin:0 0 22px
+}
+
+.form{
+  display:grid;
+  gap:10px
+}
+
+.primary{
+  background:var(--p);
+  color:#fff;
+  padding:13px 16px;
+  border-radius:14px;
+  font-weight:800
+}
+
+.secondary{
+  background:#edf2f8;
+  color:var(--txt);
+  padding:12px 15px;
+  border-radius:14px
+}
+
+body.dark .secondary{
+  background:#202a40;
+  color:var(--txt)
+}
+
+.switch{
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+  margin-top:15px
+}
+
+.switch button{
+  background:none;
+  color:var(--p);
+  font-weight:800
+}
+
+.status{
+  min-height:20px;
+  text-align:center;
+  font-size:13px;
+  color:var(--danger)
+}
+
+/* APP */
+
+.app{
+  min-height:100vh
+}
+
+.top{
+  height:68px;
+  background:var(--card);
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 max(14px,calc((100% - 1100px)/2));
+  position:sticky;
+  top:0;
+  z-index:20
+}
+
+.brand{
+  font-size:21px;
+  font-weight:900;
+  flex:1
+}
+
+.avatar{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:var(--p);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+  overflow:hidden;
+  flex:none
+}
+
+.avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+
+.icon{
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  background:#eef3f9;
+  color:var(--txt)
+}
+
+body.dark .icon{
+  background:#202a40
+}
+
+.online{
+  font-size:12px;
+  color:var(--ok);
+  font-weight:800;
+  padding:6px 12px;
+  background:#eaf8ef;
+  border-radius:999px
+}
+
+body.dark .online{
+  background:#123322
+}
+
+.main{
+  width:min(1100px,100%);
+  margin:auto;
+  padding:16px
+}
+
+.search{
+  display:flex;
+  gap:9px;
+  margin-bottom:10px
+}
+
+.search input{
+  flex:1
+}
+
+.contacts{
+  display:grid;
+  gap:9px
+}
+
+.contact{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:13px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  cursor:pointer
+}
+
+.contact:hover{
+  border-color:var(--p)
+}
+
+.contact .grow{
+  flex:1;
+  min-width:0
+}
+
+.contact b{
+  display:block
+}
+
+.contact small{
+  color:var(--muted)
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:35px 15px
+}
+
+/* CHAT */
+
+.chat{
+  position:fixed;
+  inset:0;
+  background:var(--bg);
+  z-index:40;
+  display:flex;
+  flex-direction:column
+}
+
+.chat-head{
+  height:68px;
+  background:var(--card);
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 12px
+}
+
+.chat-title{
+  flex:1
+}
+
+.chat-title b{
+  display:block
+}
+
+.chat-title small{
+  color:var(--muted)
+}
+
+.messages{
+  flex:1;
+  overflow:auto;
+  padding:15px;
+  display:flex;
+  flex-direction:column;
+  gap:7px
+}
+
+.bubble{
+  max-width:min(78%,520px);
+  padding:10px 13px;
+  border-radius:17px;
+  background:var(--card);
+  border:1px solid var(--line);
+  white-space:pre-wrap;
+  word-break:break-word
+}
+
+.bubble.me{
+  align-self:flex-end;
+  background:var(--p);
+  color:#fff;
+  border-color:var(--p);
+  border-bottom-right-radius:5px
+}
+
+.bubble.other{
+  align-self:flex-start;
+  border-bottom-left-radius:5px
+}
+
+/* COMPOSER */
+
+.composer{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:8px;
+  background:var(--card);
+  border-top:1px solid var(--line)
+}
+
+.composer input{
+  min-width:0;
+  flex:1
+}
+
+.composer-tools{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  position:relative;
+  flex:none
+}
+
+.composer-tools .tool{
+  width:42px;
+  height:42px;
+  padding:0
+}
+
+.tool{
+  width:43px;
+  height:43px;
+  border-radius:14px;
+  background:#edf2f8;
+  color:var(--txt);
+  font-size:20px
+}
+
+body.dark .tool{
+  background:#202a40
+}
+
+.tool.recording{
+  background:#e53935;
+  color:#fff
+}
+
+.send{
+  background:var(--p);
+  color:#fff;
+  border-radius:14px;
+  width:44px;
+  min-width:44px;
+  height:42px;
+  padding:0;
+  font-size:21px;
+  display:grid;
+  place-items:center
+}
+
+.send-arrow{
+  margin:0
+}
+
+/* MEDIA */
+
+.attach-name{
+  font-size:12px;
+  color:var(--muted);
+  max-width:110px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+
+.media-preview{
+  padding:8px 12px;
+  background:var(--card);
+  border-top:1px solid var(--line);
+  display:none;
+  align-items:center;
+  gap:8px
+}
+
+.media-preview.show{
+  display:flex
+}
+
+.media-preview img,
+.media-preview video{
+  width:58px;
+  height:58px;
+  object-fit:cover;
+  border-radius:10px
+}
+
+.media-preview audio{
+  max-width:180px
+}
+
+.clear-media{
+  margin-left:auto;
+  border-radius:10px;
+  padding:7px 10px;
+  background:#fee;
+  color:#b42318
+}
+
+.media-msg img,
+.media-msg video{
+  display:block;
+  max-width:280px;
+  max-height:360px;
+  border-radius:12px;
+  margin-bottom:4px
+}
+
+/* VOICE MESSAGE */
+
+.voice-msg{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-width:250px;
+  max-width:100%
+}
+
+.voice-msg audio{
+  display:none
+}
+
+.voice-icon{
+  width:38px;
+  height:38px;
+  min-width:38px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:var(--p);
+  color:#fff
+}
+
+.voice-player{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  width:100%;
+  min-width:190px;
+  max-width:300px
+}
+
+.voice-play,
+.voice-stop{
+  width:40px;
+  height:40px;
+  min-width:40px;
+  border-radius:50%;
+  color:#fff;
+  display:grid;
+  place-items:center;
+  font-size:16px;
+  cursor:pointer
+}
+
+.voice-play{
+  background:var(--p)
+}
+
+.voice-stop{
+  background:#e53935
+}
+
+.voice-progress{
+  flex:1;
+  min-width:65px;
+  height:7px;
+  padding:0;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  accent-color:var(--p);
+  cursor:pointer;
+  box-shadow:none
+}
+
+.voice-progress:focus{
+  box-shadow:none
+}
+
+.voice-duration{
+  font-size:11px;
+  color:var(--muted);
+  min-width:40px;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap
+}
+
+.bubble.me .voice-duration{
+  color:#eaf2ff
+}
+
+/* RECORDING */
+
+.voice-status{
+  display:none;
+  align-items:center;
+  gap:9px;
+  padding:7px 12px;
+  background:var(--card);
+  border-top:1px solid var(--line);
+  font-size:13px;
+  font-weight:800
+}
+
+.voice-status.show{
+  display:flex
+}
+
+.voice-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#e53935;
+  animation:pulseVoice 1s infinite
+}
+
+.voice-counter{
+  font-variant-numeric:tabular-nums;
+  color:var(--p)
+}
+
+@keyframes pulseVoice{
+  50%{
+    opacity:.25;
+    transform:scale(.8)
+  }
+}
+
+/* MENU MEDIA */
+
+.media-picker-menu{
+  position:absolute;
+  left:0;
+  bottom:49px;
+  display:none;
+  gap:7px;
+  padding:8px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:15px;
+  box-shadow:0 12px 30px #0003;
+  z-index:80
+}
+
+.media-picker-menu.show{
+  display:flex
+}
+
+.media-picker-menu button{
+  padding:10px 13px;
+  border-radius:11px;
+  background:#edf2f8;
+  color:var(--txt);
+  font-weight:700
+}
+
+body.dark .media-picker-menu button{
+  background:#202a40
+}
+
+/* SETTINGS */
+
+.sheet{
+  position:fixed;
+  inset:0;
+  background:#0007;
+  z-index:60;
+  display:flex;
+  justify-content:flex-end
+}
+
+.panel{
+  width:min(430px,100%);
+  height:100%;
+  overflow:auto;
+  background:var(--card);
+  padding:20px
+}
+
+.panel-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:20px
+}
+
+.panel-head h2{
+  flex:1;
+  margin:0
+}
+
+.section{
+  padding:16px 0;
+  border-top:1px solid var(--line)
+}
+
+.section h3{
+  margin:0 0 10px
+}
+
+.profile-big{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px
+}
+
+.big-avatar{
+  width:74px;
+  height:74px;
+  border-radius:50%;
+  background:var(--p);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  font-size:25px;
+  font-weight:900;
+  overflow:hidden
+}
+
+.big-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+
+.colors{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px
+}
+
+.sw{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  border:3px solid transparent
+}
+
+.sw.active{
+  outline:2px solid var(--txt)
+}
+
+.setting-item{
+  border:1px solid var(--line);
+  border-radius:16px;
+  margin-top:10px;
+  overflow:hidden
+}
+
+.setting-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:15px;
+  background:var(--card);
+  color:var(--txt);
+  text-align:left;
+  font-weight:800
+}
+
+.setting-body{
+  padding:14px;
+  border-top:1px solid var(--line)
+}
+
+/* NOTIFICATIONS */
+
+.avatar-btn{
+  border:0;
+  padding:0;
+  cursor:pointer
+}
+
+.contact .avatar-btn{
+  background:transparent
+}
+
+.blocked-tag{
+  font-size:11px;
+  color:var(--danger);
+  font-weight:800
+}
+
+.unread-badge{
+  display:inline-grid;
+  place-items:center;
+  min-width:20px;
+  height:20px;
+  padding:0 6px;
+  border-radius:999px;
+  background:var(--danger);
+  color:#fff;
+  font-size:11px;
+  font-weight:900
+}
+
+.notify-page{
+  position:fixed;
+  inset:0;
+  background:var(--bg);
+  z-index:30;
+  transform:translateX(100%);
+  transition:transform .22s ease;
+  display:flex;
+  flex-direction:column
+}
+
+.notify-page.open{
+  transform:translateX(0)
+}
+
+.notify-head{
+  height:68px;
+  background:var(--card);
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 14px
+}
+
+.notify-head h2{
+  flex:1;
+  margin:0;
+  font-size:20px
+}
+
+.notification-list{
+  overflow:auto;
+  padding:14px
+}
+
+.notification{
+  display:flex;
+  gap:11px;
+  align-items:center;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:12px;
+  margin-bottom:9px
+}
+
+.notification.unread{
+  border-color:var(--p)
+}
+
+.notification .grow{
+  flex:1
+}
+
+.swipe-hint{
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  padding:10px
+}
+
+/* MESSAGE OPTIONS */
+
+.msg-row{
+  display:flex;
+  align-items:flex-end;
+  gap:4px
+}
+
+.msg-row>div:first-child{
+  flex:1
+}
+
+.msg-menu{
+  border:0;
+  background:transparent;
+  opacity:.55;
+  cursor:pointer;
+  font-size:18px;
+  padding:2px 5px
+}
+
+.deleted-msg{
+  font-style:italic;
+  opacity:.7
+}
+
+/* PROFILE */
+
+.profile-view{
+  position:fixed;
+  inset:0;
+  background:#000b;
+  z-index:100;
+  display:grid;
+  place-items:center;
+  padding:20px
+}
+
+.profile-card{
+  width:min(390px,100%);
+  background:var(--card);
+  border-radius:24px;
+  padding:20px;
+  text-align:center
+}
+
+.profile-large{
+  width:190px;
+  height:190px;
+  border-radius:50%;
+  margin:10px auto 15px;
+  background:var(--p);
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  font-size:70px;
+  font-weight:900
+}
+
+.profile-large img{
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+
+/* MOBILE */
+
+@media(max-width:600px){
+  .online{
+    display:none
+  }
+
+  .main{
+    padding:10px
+  }
+
+  .auth-card{
+    padding:22px
+  }
+
+  .bubble{
+    max-width:86%
+  }
+
+  .tool{
+    width:40px;
+    height:40px
+  }
+
+  .media-msg img,
+  .media-msg video{
+    max-width:230px
+  }
+
+  .voice-msg{
+    min-width:225px
+  }
+
+  .voice-player{
+    min-width:175px
+  }
+
+  .voice-play,
+  .voice-stop{
+    width:36px;
+    height:36px;
+    min-width:36px;
+    font-size:14px
+  }
+}
+</style>
+</head>
+
 <body>
-<div id="auth" class="auth"><div class="auth-card"><div class="logo">A</div><h1 id="authTitle">Connexion</h1><p id="authSub" class="sub">Connecte-toi à Axess Chat</p><div class="form"><input id="name" maxlength="30" placeholder="Nom d'utilisateur" autocomplete="username"><input id="password" type="password" minlength="4" placeholder="Mot de passe" autocomplete="current-password"><input id="password2" class="hidden" type="password" minlength="4" placeholder="Confirmer le mot de passe" autocomplete="new-password"><button id="authBtn" class="primary">Se connecter</button><div id="authErr" class="status"></div></div><div class="switch"><span id="switchText">Pas encore de compte ?</span> <button id="switchBtn">Créer un compte</button></div></div></div>
-<div id="app" class="app hidden"><header class="top"><div class="brand">💬 Axess Chat</div><span id="online" class="online">🟢 en ligne</span><div id="myAv" class="avatar">?</div><button id="settingsBtn" class="icon">⚙️</button></header><main class="main"><div class="search"><input id="search" placeholder="Rechercher un contact par nom..."><button id="refresh" class="icon">↻</button><button id="notifyBtn" class="icon" title="Notifications">🔔<span id="notifyBadge" class="unread-badge hidden">0</span></button></div><div class="swipe-hint">← Glisse vers la gauche pour voir les notifications</div><div id="contacts" class="contacts"></div></main></div>
-<div id="notifyPage" class="notify-page"><header class="notify-head"><button id="notifyBack" class="icon">‹</button><h2>🔔 Notifications</h2><button id="markNotifications" class="secondary">Tout lire</button></header><div id="notificationList" class="notification-list"></div></div>
-<div id="chat" class="chat hidden"><header class="chat-head"><button id="backChat" class="icon">‹</button><button id="chatAvBtn" class="avatar" title="Voir le profil"><span id="chatAv">?</span></button><div class="chat-title"><b id="chatName">Contact</b><small id="chatStatus">Conversation privée</small></div><button id="blockBtn" class="icon" title="Bloquer">🚫</button></header><div id="messages" class="messages"></div><div id="voiceStatus" class="voice-status"><span class="voice-dot"></span><span>Enregistrement en cours</span><span id="voiceCounter" class="voice-counter">00:00</span><button id="cancelVoice" class="secondary" style="margin-left:auto;padding:6px 10px">Annuler</button></div><div id="mediaPreview" class="media-preview"><span id="previewContent"></span><span id="attachName" class="attach-name"></span><button id="clearMedia" class="clear-media">×</button></div><div class="composer"><div class="composer-tools"><button id="mediaMenuBtn" class="tool" title="Photo ou vidéo">📎</button><div id="mediaPickerMenu" class="media-picker-menu"><button id="photoBtn" type="button">📷 Photo</button><button id="videoBtn" type="button">🎥 Vidéo</button></div><button id="voiceBtn" class="tool" title="Message vocal">🎙️</button><input id="mediaFile" type="file" accept="image/*,video/*" class="hidden"></div><input id="message" placeholder="Écrire un message..." autocomplete="off"><button id="send" class="send" title="Envoyer">➤</button></div></div>
-<div id="sheet" class="sheet hidden"><aside class="panel"><div class="panel-head"><h2>⚙️ Paramètres</h2><button id="closeSettings" class="icon">×</button></div><div class="profile-big"><button id="bigAvBtn" class="big-avatar" title="Voir la photo de profil"><span id="bigAv">?</span></button><div><b id="profileName">Utilisateur</b><div style="color:var(--muted);font-size:13px">Ton profil Axess Chat</div></div></div><div class="section"><h3>👤 Profil</h3><div class="setting-item"><button class="setting-toggle" data-target="nameBox">✏️ Modifier le nom <span>›</span></button><div id="nameBox" class="setting-body hidden"><div class="form"><input id="newName" placeholder="Nouveau nom"><button id="saveName" class="primary">Enregistrer le nom</button><div id="profileMsg" class="status"></div></div></div></div><div class="setting-item"><button class="setting-toggle" data-target="photoBox">📷 Photo de profil <span>›</span></button><div id="photoBox" class="setting-body hidden"><div class="form"><input id="photoFile" type="file" accept="image/*"><button id="savePhoto" class="secondary">Changer la photo</button><div id="photoMsg" class="status"></div></div></div></div></div><div class="section"><h3>🔐 Sécurité</h3><div class="setting-item"><button class="setting-toggle" data-target="passwordBox">🔑 Changer le mot de passe <span>›</span></button><div id="passwordBox" class="setting-body hidden"><div class="form"><input id="currentPw" type="password" placeholder="Mot de passe actuel"><input id="newPw" type="password" placeholder="Nouveau mot de passe"><input id="confirmPw" type="password" placeholder="Confirmer le nouveau mot de passe"><button id="savePw" class="primary">Modifier le mot de passe</button><div id="pwMsg" class="status"></div></div></div></div></div><div class="section"><h3>🎨 Apparence</h3><button id="darkBtn" class="secondary" style="width:100%;margin-bottom:10px">🌙 Mode sombre</button><div class="colors" id="colors"></div></div><div class="section"><button id="logout" class="secondary" style="width:100%">↪ Déconnexion</button></div></aside></div><div id="profileView" class="profile-view hidden"><div class="profile-card"><button id="closeProfile" class="icon" style="float:right">×</button><div id="profileLarge" class="profile-large">?</div><h2 id="profileViewName">Utilisateur</h2><button id="profileClose2" class="secondary" style="width:100%">Fermer</button></div></div>
-<script>
-const $=s=>document.querySelector(s);let me=null,current=null,authMode='login',timer=null,pendingMedia=null;
-const COLORS=['#6d4aff','#00a884','#7c4dff','#e91e63','#f44336','#ff9800','#ffc107','#00bcd4','#009688','#795548','#607d8b','#111827','#06b6d4','#8b5cf6','#ec4899','#22c55e','#14b8a6','#f97316'];
-function applyTheme(){document.documentElement.style.setProperty('--p',localStorage.getItem('axess_color')||'#6d4aff');document.body.classList.toggle('dark',localStorage.getItem('axess_dark')==='1');$('#darkBtn').textContent=localStorage.getItem('axess_dark')==='1'?'☀️ Mode clair':'🌙 Mode sombre';document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active',x.dataset.c===localStorage.getItem('axess_color')))}
-function av(el,u){el.innerHTML=u&&u.profilePhoto?`<img src="${u.profilePhoto}">`:(u?.name||'?').slice(0,1).toUpperCase()}
-function showProfile(u){if(!u)return;$('#profileViewName').textContent=u.name||'Utilisateur';const box=$('#profileLarge');box.innerHTML='';if(u.profilePhoto){const img=document.createElement('img');img.src=String(u.profilePhoto)+(String(u.profilePhoto).includes('?')?'&':'?')+'view='+Date.now();img.onerror=()=>{box.textContent=(u.name||'?').slice(0,1).toUpperCase()};box.appendChild(img)}else box.textContent=(u.name||'?').slice(0,1).toUpperCase();$('#profileView').classList.remove('hidden')}
-function clearPending(){pendingMedia=null;$('#mediaPreview').classList.remove('show');$('#previewContent').innerHTML='';$('#attachName').textContent='';$('#mediaFile').value=''}
-function prepareMedia(file){if(!file)return;if(file.type.startsWith('video/')&&file.size>60*1024*1024)return alert('Vidéo trop volumineuse : 60 Mo maximum.');if(file.type.startsWith('image/')&&file.size>8*1024*1024)return alert('Photo trop volumineuse : 8 Mo maximum.');pendingMedia=file;$('#attachName').textContent=file.name;const url=URL.createObjectURL(file);$('#previewContent').innerHTML=file.type.startsWith('image/')?`<img src="${url}">`:file.type.startsWith('video/')?`<video src="${url}" controls></video>`:'';$('#mediaPreview').classList.add('show')}
-function fileToData(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
-async function api(url,opt={}){opt.headers=Object.assign({'Content-Type':'application/json'},opt.headers||{});const r=await fetch(url,opt);let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||'Erreur serveur');return d}
-function setAuth(mode){authMode=mode;$('#authTitle').textContent=mode==='login'?'Connexion':'Créer un compte';$('#authSub').textContent=mode==='login'?'Connecte-toi à Axess Chat':'Crée ton compte Axess Chat';$('#authBtn').textContent=mode==='login'?'Se connecter':'Créer mon compte';$('#password2').classList.toggle('hidden',mode==='login');$('#switchText').textContent=mode==='login'?'Pas encore de compte ?':'Déjà un compte ?';$('#switchBtn').textContent=mode==='login'?'Créer un compte':'Se connecter';$('#authErr').textContent=''}
-async function boot(){applyTheme();try{const d=await api('/api/me',{cache:'no-store'});if(d.user){me=d.user;showApp();await loadUsers();await loadNotifications()}else showAuth()}catch{showAuth()}$('#online').textContent='🟢 en ligne'}
-function showAuth(){me=null;$('#app').classList.add('hidden');$('#auth').classList.remove('hidden')}
-function showApp(){ $('#auth').classList.add('hidden');$('#app').classList.remove('hidden');av($('#myAv'),me);$('#profileName').textContent=me.name;$('#newName').value=me.name;av($('#bigAv'),me);loadNotifications()}
-$('#switchBtn').onclick=()=>setAuth(authMode==='login'?'register':'login');
-$('#authBtn').onclick=async()=>{const name=$('#name').value.trim(),p=$('#password').value,p2=$('#password2').value;$('#authErr').textContent='';if(!name||p.length<4)return $('#authErr').textContent='Nom et mot de passe requis (4 caractères minimum).';if(authMode==='register'&&p!==p2)return $('#authErr').textContent='Les deux mots de passe ne correspondent pas.';try{const d=await api(authMode==='login'?'/api/login':'/api/register',{method:'POST',body:JSON.stringify({name,password:p})});me=d.user;showApp();await loadUsers()}catch(e){$('#authErr').textContent=e.message}};
-$('#password').onkeydown=e=>{if(e.key==='Enter')$('#authBtn').click()};$('#password2').onkeydown=e=>{if(e.key==='Enter')$('#authBtn').click()};
-function getSavedContacts(){try{return JSON.parse(localStorage.getItem('nova_contacts')||'[]')}catch{return[]}}
-function saveContact(name){const a=getSavedContacts();if(name&&!a.includes(name)){a.push(name);localStorage.setItem('nova_contacts',JSON.stringify(a))}}
-function savedContact(name){return getSavedContacts().includes(name)}
-async function loadUsers(){try{const q=encodeURIComponent($('#search').value.trim());const d=await api('/api/users?q='+q);let list=d.users||[];const saved=getSavedContacts();if(!q)list=list.filter(u=>saved.includes(u.name));renderUsers(list,q);if(!q&&saved.length===0){$('#contacts').innerHTML='<div class="empty">Aucun contact enregistré.<br><small>Recherche une personne puis ouvre sa conversation pour l’ajouter.</small></div>'}}catch(e){if(e.message==='Non connecté')showAuth()}}
-function renderUsers(users,isSearch=false){
-  const c=$('#contacts');
-  if(!users.length){c.innerHTML='<div class="empty">Aucun contact enregistré.<br><small>Utilise la recherche pour trouver une personne.</small></div>';return}
-  c.innerHTML=users.map(u=>{
-    const blockedTag=u.blocked?'<span class="blocked-tag">Bloqué</span>':'';
-    const avHtml=u.profilePhoto?`<img src="${esc(u.profilePhoto)}" onerror="this.style.display='none'">`:esc((u.name||'?').slice(0,1).toUpperCase());
-    return `<div class="contact" data-name="${esc(u.name)}"><button class="avatar avatar-btn" title="Voir la photo de profil">${avHtml}</button><div class="grow"><b>${esc(u.name)}</b><small>${u.blocked?blockedTag:(savedContact(u.name)?'Contact enregistré':'Personne trouvée')}</small></div><button class="secondary add-contact" title="Ajouter aux contacts">${savedContact(u.name)?'✓':'＋ Ajouter'}</button><span>${u.online?'🟢':'⚪'}</span></div>`;
-  }).join('');
-  c.querySelectorAll('.contact').forEach(x=>{
-    const name=x.dataset.name;
-    x.onclick=()=>openChat(name);
-    const avb=x.querySelector('.avatar-btn');
-    avb.onclick=(e)=>{e.stopPropagation();openProfileByName(name)};
-    const add=x.querySelector('.add-contact');
-    if(add)add.onclick=(e)=>{e.stopPropagation();saveContact(name);add.textContent='✓';add.title='Contact enregistré';loadUsers()};
-  });
-}
-function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-async function openChat(name){try{current=await api('/api/user?name='+encodeURIComponent(name));if(!current)return;saveContact(current.name);$('#chatName').textContent=current.name;av($('#chatAv'),current);const bs=await api('/api/block/status?name='+encodeURIComponent(current.name));setBlockButton(!!bs.blocked);$('#chat').classList.remove('hidden');clearPending();await loadMessages();await loadUsers()}catch(e){alert(e.message)}}
-async function openProfileByName(name){try{const u=await api('/api/user?name='+encodeURIComponent(name));showProfile(u)}catch(e){alert(e.message)}}
-function setBlockButton(isBlocked){$('#blockBtn').textContent=isBlocked?'🔓':'🚫';$('#blockBtn').title=isBlocked?'Débloquer':'Bloquer';$('#chatStatus').textContent=isBlocked?'Conversation bloquée — le contact reste visible':'Conversation privée'}
-async function loadNotifications(){try{const d=await api('/api/notifications');const saved=getSavedContacts();const arr=(d.notifications||[]).filter(n=>n.fromName&&!saved.includes(n.fromName));const box=$('#notificationList');if(!arr.length){box.innerHTML='<div class="empty">Aucune notification de nouveau contact.</div>'}else{box.innerHTML=arr.map(n=>`<div class="notification ${n.read?'':'unread'}"><div class="avatar">${esc((n.fromName||'?').slice(0,1).toUpperCase())}</div><div class="grow"><b>${esc(n.fromName||'Utilisateur')}</b><div class="small">Vous a envoyé un message.</div></div><button class="primary notif-open" data-name="${esc(n.fromName||'')}">Voir</button></div>`).join('');box.querySelectorAll('.notif-open').forEach(b=>b.onclick=()=>{const name=b.dataset.name;saveContact(name);closeNotifications();openChat(name)});$('#notifyBadge').textContent=String(arr.filter(n=>!n.read).length);$('#notifyBadge').classList.toggle('hidden',arr.filter(n=>!n.read).length===0)}}catch(e){console.log(e.message)}}
-function openNotifications(){loadNotifications();$('#notifyPage').classList.add('open')}
-function closeNotifications(){$('#notifyPage').classList.remove('open');loadUsers()}
 
-function mediaKind(m){const t=String(m.type||'').toLowerCase(),mime=String(m.mime||'').toLowerCase(),url=String(m.mediaUrl||'').toLowerCase();if(t==='audio'||mime.startsWith('audio/')||/\.(weba|wav|wave|oga|ogg|m4a|mp3|aac)(?:$|\?)/.test(url))return 'audio';if(t==='video'||mime.startsWith('video/')||/\.(mp4|webm|ogv|mov)(?:$|\?)/.test(url))return 'video';if(t==='image'||mime.startsWith('image/')||/\.(jpg|jpeg|png|webp|gif)(?:$|\?)/.test(url))return 'image';return t}
-function messageHtml(m){if(m.deletedEverywhere||m.type==='deleted')return '<div class="deleted-msg">🗑️ Message supprimé pour tout le monde</div>';let media='',kind=mediaKind(m);if(m.mediaUrl&&kind==='image')media=`<div class="media-msg"><img src="${m.mediaUrl}" loading="lazy" onclick="window.open('${m.mediaUrl}','_blank')"></div>`;else if(m.mediaUrl&&kind==='video')media=`<div class="media-msg"><video src="${m.mediaUrl}" controls preload="metadata" playsinline></video></div>`;else if(m.mediaUrl&&kind==='audio')media=`<div class="media-msg voice-msg"><span class="voice-icon">🎙️</span><div class="voice-player"><audio class="voice-audio" src="${m.mediaUrl}" preload="metadata" playsinline></audio><button type="button" class="voice-play" data-audio="${m.id}" aria-label="Lire le vocal">▶️</button><input class="voice-progress" type="range" min="0" max="100" value="0" step="0.1" data-progress="${m.id}" aria-label="Progression"><span class="voice-duration" data-time="${m.id}">0:00</span></div></div>`;const text=m.text?`<div>${esc(m.text)}</div>`:'';return media+text}
-function setupVoicePlayers(){
-  document.querySelectorAll('.voice-player').forEach(player=>{
-    const audio=player.querySelector('.voice-audio'), play=player.querySelector('.voice-play'), progress=player.querySelector('.voice-progress'), time=player.querySelector('.voice-duration');
-    if(!audio||!play||!progress)return;
-    const fmt=v=>{v=Number(v)||0;const m=Math.floor(v/60),s=Math.floor(v%60);return m+':'+String(s).padStart(2,'0')};
-    play.onclick=async()=>{try{if(audio.paused){document.querySelectorAll('.voice-audio').forEach(a=>{if(a!==audio){a.pause();const b=a.closest('.voice-player')?.querySelector('.voice-play');if(b)b.textContent='▶️'}});await audio.play();play.textContent='⏸️'}else{audio.pause();play.textContent='▶️'}}catch(e){alert('Impossible de lire ce vocal sur ce navigateur.')}};
-    audio.onloadedmetadata=()=>{time.textContent=fmt(audio.duration)};
-    audio.ontimeupdate=()=>{if(audio.duration){progress.value=(audio.currentTime/audio.duration)*100;time.textContent=fmt(audio.currentTime)+' / '+fmt(audio.duration)}};
-    progress.oninput=()=>{if(audio.duration)audio.currentTime=(Number(progress.value)/100)*audio.duration};
-    audio.onended=()=>{play.textContent='▶️';progress.value=100};
-    audio.onerror=()=>{play.textContent='⚠️'};
+<!-- AUTH -->
+<div id="auth" class="auth">
+  <div class="auth-card">
+    <div class="logo">A</div>
+
+    <h1 id="authTitle">Connexion</h1>
+    <p id="authSub" class="sub">Connecte-toi à Axess Chat</p>
+
+    <div class="form">
+      <input
+        id="name"
+        maxlength="30"
+        placeholder="Nom d'utilisateur"
+        autocomplete="username"
+      >
+
+      <input
+        id="password"
+        type="password"
+        minlength="4"
+        placeholder="Mot de passe"
+        autocomplete="current-password"
+      >
+
+      <input
+        id="password2"
+        class="hidden"
+        type="password"
+        minlength="4"
+        placeholder="Confirmer le mot de passe"
+        autocomplete="new-password"
+      >
+
+      <button id="authBtn" class="primary">
+        Se connecter
+      </button>
+
+      <div id="authErr" class="status"></div>
+    </div>
+
+    <div class="switch">
+      <span id="switchText">Pas encore de compte ?</span>
+      <button id="switchBtn">Créer un compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app hidden">
+
+  <header class="top">
+    <div class="brand">💬 Axess Chat</div>
+
+    <span id="online" class="online">
+      🟢 en ligne
+    </span>
+
+    <div id="myAv" class="avatar">?</div>
+
+    <button id="settingsBtn" class="icon">
+      ⚙️
+    </button>
+  </header>
+
+  <main class="main">
+
+    <div class="search">
+      <input
+        id="search"
+        placeholder="Rechercher un contact par nom..."
+      >
+
+      <button id="refresh" class="icon">
+        ↻
+      </button>
+
+      <button
+        id="notifyBtn"
+        class="icon"
+        title="Notifications"
+      >
+        🔔
+        <span id="notifyBadge" class="unread-badge hidden">
+          0
+        </span>
+      </button>
+    </div>
+
+    <div class="swipe-hint">
+      ← Glisse vers la gauche pour voir les notifications
+    </div>
+
+    <div id="contacts" class="contacts"></div>
+
+  </main>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div id="notifyPage" class="notify-page">
+
+  <header class="notify-head">
+    <button id="notifyBack" class="icon">
+      ‹
+    </button>
+
+    <h2>🔔 Notifications</h2>
+
+    <button id="markNotifications" class="secondary">
+      Tout lire
+    </button>
+  </header>
+
+  <div id="notificationList" class="notification-list"></div>
+</div>
+
+<!-- CHAT -->
+<div id="chat" class="chat hidden">
+
+  <header class="chat-head">
+
+    <button id="backChat" class="icon">
+      ‹
+    </button>
+
+    <button
+      id="chatAvBtn"
+      class="avatar"
+      title="Voir le profil"
+    >
+      <span id="chatAv">?</span>
+    </button>
+
+    <div class="chat-title">
+      <b id="chatName">Contact</b>
+      <small id="chatStatus">Conversation privée</small>
+    </div>
+
+    <button
+      id="blockBtn"
+      class="icon"
+      title="Bloquer"
+    >
+      🚫
+    </button>
+
+  </header>
+
+  <div id="messages" class="messages"></div>
+
+  <!-- ENREGISTREMENT VOCAL -->
+  <div id="voiceStatus" class="voice-status">
+
+    <span class="voice-dot"></span>
+
+    <span>
+      Enregistrement en cours
+    </span>
+
+    <span
+      id="voiceCounter"
+      class="voice-counter"
+    >
+      00:00
+    </span>
+
+    <button
+      id="cancelVoice"
+      class="secondary"
+      style="margin-left:auto;padding:6px 10px"
+    >
+      Annuler
+    </button>
+
+  </div>
+
+  <!-- PREVIEW -->
+  <div id="mediaPreview" class="media-preview">
+
+    <span id="previewContent"></span>
+
+    <span
+      id="attachName"
+      class="attach-name"
+    ></span>
+
+    <button
+      id="clearMedia"
+      class="clear-media"
+    >
+      ×
+    </button>
+
+  </div>
+
+  <!-- COMPOSER -->
+  <div class="composer">
+
+    <div class="composer-tools">
+
+      <button
+        id="mediaMenuBtn"
+        class="tool"
+        title="Photo ou vidéo"
+      >
+        📎
+      </button>
+
+      <div
+        id="mediaPickerMenu"
+        class="media-picker-menu"
+      >
+        <button
+          id="photoBtn"
+          type="button"
+        >
+          📷 Photo
+        </button>
+
+        <button
+          id="videoBtn"
+          type="button"
+        >
+          🎥 Vidéo
+        </button>
+      </div>
+
+      <button
+        id="voiceBtn"
+        class="tool"
+        title="Message vocal"
+      >
+        🎙️
+      </button>
+
+      <input
+        id="mediaFile"
+        type="file"
+        accept="image/*,video/*"
+        class="hidden"
+      >
+
+    </div>
+
+    <input
+      id="message"
+      placeholder="Écrire un message..."
+      autocomplete="off"
+    >
+
+    <button
+      id="send"
+      class="send"
+      title="Envoyer"
+    >
+      ➤
+    </button>
+
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="sheet" class="sheet hidden">
+
+  <aside class="panel">
+
+    <div class="panel-head">
+      <h2>⚙️ Paramètres</h2>
+
+      <button
+        id="closeSettings"
+        class="icon"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="profile-big">
+
+      <button
+        id="bigAvBtn"
+        class="big-avatar"
+        title="Voir la photo de profil"
+      >
+        <span id="bigAv">?</span>
+      </button>
+
+      <div>
+        <b id="profileName">Utilisateur</b>
+
+        <div
+          style="color:var(--muted);font-size:13px"
+        >
+          Ton profil Axess Chat
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PROFIL -->
+    <div class="section">
+
+      <h3>👤 Profil</h3>
+
+      <div class="setting-item">
+
+        <button
+          class="setting-toggle"
+          data-target="nameBox"
+        >
+          ✏️ Modifier le nom
+          <span>›</span>
+        </button>
+
+        <div
+          id="nameBox"
+          class="setting-body hidden"
+        >
+
+          <div class="form">
+
+            <input
+              id="newName"
+              placeholder="Nouveau nom"
+            >
+
+            <button
+              id="saveName"
+              class="primary"
+            >
+              Enregistrer le nom
+            </button>
+
+            <div
+              id="profileMsg"
+              class="status"
+            ></div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <div class="setting-item">
+
+        <button
+          class="setting-toggle"
+          data-target="photoBox"
+        >
+          📷 Photo de profil
+          <span>›</span>
+        </button>
+
+        <div
+          id="photoBox"
+          class="setting-body hidden"
+        >
+
+          <div class="form">
+
+            <input
+              id="photoFile"
+              type="file"
+              accept="image/*"
+            >
+
+            <button
+              id="savePhoto"
+              class="secondary"
+            >
+              Changer la photo
+            </button>
+
+            <div
+              id="photoMsg"
+              class="status"
+            ></div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECURITE -->
+    <div class="section">
+
+      <h3>🔐 Sécurité</h3>
+
+      <div class="setting-item">
+
+        <button
+          class="setting-toggle"
+          data-target="passwordBox"
+        >
+          🔑 Changer le mot de passe
+          <span>›</span>
+        </button>
+
+        <div
+          id="passwordBox"
+          class="setting-body hidden"
+        >
+
+          <div class="form">
+
+            <input
+              id="currentPw"
+              type="password"
+              placeholder="Mot de passe actuel"
+            >
+
+            <input
+              id="newPw"
+              type="password"
+              placeholder="Nouveau mot de passe"
+            >
+
+            <input
+              id="confirmPw"
+              type="password"
+              placeholder="Confirmer le nouveau mot de passe"
+            >
+
+            <button
+              id="savePw"
+              class="primary"
+            >
+              Modifier le mot de passe
+            </button>
+
+            <div
+              id="pwMsg"
+              class="status"
+            ></div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- APPARENCE -->
+    <div class="section">
+
+      <h3>🎨 Apparence</h3>
+
+      <button
+        id="darkBtn"
+        class="secondary"
+        style="width:100%;margin-bottom:10px"
+      >
+        🌙 Mode sombre
+      </button>
+
+      <div
+        class="colors"
+        id="colors"
+      ></div>
+
+    </div>
+
+    <!-- DECONNEXION -->
+    <div class="section">
+
+      <button
+        id="logout"
+        class="secondary"
+        style="width:100%"
+      >
+        ↪ Déconnexion
+      </button>
+
+    </div>
+
+  </aside>
+</div>
+
+<!-- PROFILE VIEW -->
+<div
+  id="profileView"
+  class="profile-view hidden"
+>
+
+  <div class="profile-card">
+
+    <button
+      id="closeProfile"
+      class="icon"
+      style="float:right"
+    >
+      ×
+    </button>
+
+    <div
+      id="profileLarge"
+      class="profile-large"
+    >
+      ?
+    </div>
+
+    <h2 id="profileViewName">
+      Utilisateur
+    </h2>
+
+    <button
+      id="profileClose2"
+      class="secondary"
+      style="width:100%"
+    >
+      Fermer
+    </button>
+
+  </div>
+</div>
+
+<script>
+
+const $=s=>document.querySelector(s);
+
+let me=null;
+let current=null;
+let authMode='login';
+let timer=null;
+let pendingMedia=null;
+
+const COLORS=[
+  '#6d4aff',
+  '#00a884',
+  '#7c4dff',
+  '#e91e63',
+  '#f44336',
+  '#ff9800',
+  '#ffc107',
+  '#00bcd4',
+  '#009688',
+  '#795548',
+  '#607d8b',
+  '#111827',
+  '#06b6d4',
+  '#8b5cf6',
+  '#ec4899',
+  '#22c55e',
+  '#14b8a6',
+  '#f97316'
+];
+
+/* =========================
+   THEME
+========================= */
+
+function applyTheme(){
+
+  document.documentElement.style.setProperty(
+    '--p',
+    localStorage.getItem('axess_color') || '#6d4aff'
+  );
+
+  document.body.classList.toggle(
+    'dark',
+    localStorage.getItem('axess_dark')==='1'
+  );
+
+  if($('#darkBtn')){
+    $('#darkBtn').textContent=
+      localStorage.getItem('axess_dark')==='1'
+      ?'☀️ Mode clair'
+      :'🌙 Mode sombre';
+  }
+
+  document.querySelectorAll('.sw').forEach(x=>{
+    x.classList.toggle(
+      'active',
+      x.dataset.c===localStorage.getItem('axess_color')
+    );
   });
 }
+
+/* =========================
+   AVATAR
+========================= */
+
+function av(el,u){
+
+  if(!el)return;
+
+  el.innerHTML=
+    u&&u.profilePhoto
+    ?`<img src="${esc(u.profilePhoto)}">`
+    :(u?.name||'?').slice(0,1).toUpperCase();
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+function showProfile(u){
+
+  if(!u)return;
+
+  $('#profileViewName').textContent=
+    u.name||'Utilisateur';
+
+  const box=$('#profileLarge');
+
+  box.innerHTML='';
+
+  if(u.profilePhoto){
+
+    const img=document.createElement('img');
+
+    img.src=
+      String(u.profilePhoto)+
+      (String(u.profilePhoto).includes('?')?'&':'?')+
+      'view='+Date.now();
+
+    img.onerror=()=>{
+      box.textContent=
+        (u.name||'?').slice(0,1).toUpperCase();
+    };
+
+    box.appendChild(img);
+
+  }else{
+
+    box.textContent=
+      (u.name||'?').slice(0,1).toUpperCase();
+
+  }
+
+  $('#profileView').classList.remove('hidden');
+}
+
+/* =========================
+   MEDIA
+========================= */
+
+function clearPending(){
+
+  pendingMedia=null;
+
+  $('#mediaPreview').classList.remove('show');
+  $('#previewContent').innerHTML='';
+  $('#attachName').textContent='';
+  $('#mediaFile').value='';
+}
+
+function prepareMedia(file){
+
+  if(!file)return;
+
+  if(
+    file.type.startsWith('video/') &&
+    file.size>60*1024*1024
+  ){
+    return alert(
+      'Vidéo trop volumineuse : 60 Mo maximum.'
+    );
+  }
+
+  if(
+    file.type.startsWith('image/') &&
+    file.size>8*1024*1024
+  ){
+    return alert(
+      'Photo trop volumineuse : 8 Mo maximum.'
+    );
+  }
+
+  pendingMedia=file;
+
+  $('#attachName').textContent=file.name;
+
+  const url=URL.createObjectURL(file);
+
+  if(file.type.startsWith('image/')){
+
+    $('#previewContent').innerHTML=
+      `<img src="${url}">`;
+
+  }else if(file.type.startsWith('video/')){
+
+    $('#previewContent').innerHTML=
+      `<video src="${url}" controls></video>`;
+
+  }else if(file.type.startsWith('audio/')){
+
+    $('#previewContent').innerHTML=
+      `<audio src="${url}" controls></audio>`;
+
+  }
+
+  $('#mediaPreview').classList.add('show');
+}
+
+function fileToData(file){
+
+  return new Promise((resolve,reject)=>{
+
+    const r=new FileReader();
+
+    r.onload=()=>resolve(r.result);
+    r.onerror=reject;
+
+    r.readAsDataURL(file);
+  });
+}
+
+/* =========================
+   API
+========================= */
+
+async function api(url,opt={}){
+
+  opt.headers=Object.assign(
+    {'Content-Type':'application/json'},
+    opt.headers||{}
+  );
+
+  const r=await fetch(url,opt);
+
+  let d={};
+
+  try{
+    d=await r.json();
+  }catch{}
+
+  if(!r.ok){
+    throw Error(d.error||'Erreur serveur');
+  }
+
+  return d;
+}
+
+/* =========================
+   AUTH
+========================= */
+
+function setAuth(mode){
+
+  authMode=mode;
+
+  $('#authTitle').textContent=
+    mode==='login'
+    ?'Connexion'
+    :'Créer un compte';
+
+  $('#authSub').textContent=
+    mode==='login'
+    ?'Connecte-toi à Axess Chat'
+    :'Crée ton compte Axess Chat';
+
+  $('#authBtn').textContent=
+    mode==='login'
+    ?'Se connecter'
+    :'Créer mon compte';
+
+  $('#password2').classList.toggle(
+    'hidden',
+    mode==='login'
+  );
+
+  $('#switchText').textContent=
+    mode==='login'
+    ?'Pas encore de compte ?'
+    :'Déjà un compte ?';
+
+  $('#switchBtn').textContent=
+    mode==='login'
+    ?'Créer un compte'
+    :'Se connecter';
+
+  $('#authErr').textContent='';
+}
+
+async function boot(){
+
+  applyTheme();
+
+  try{
+
+    const d=await api(
+      '/api/me',
+      {cache:'no-store'}
+    );
+
+    if(d.user){
+
+      me=d.user;
+
+      showApp();
+
+      await loadUsers();
+      await loadNotifications();
+
+    }else{
+
+      showAuth();
+
+    }
+
+  }catch{
+
+    showAuth();
+
+  }
+
+  $('#online').textContent='🟢 en ligne';
+}
+
+function showAuth(){
+
+  me=null;
+
+  $('#app').classList.add('hidden');
+  $('#auth').classList.remove('hidden');
+}
+
+function showApp(){
+
+  $('#auth').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+
+  av($('#myAv'),me);
+
+  $('#profileName').textContent=
+    me.name;
+
+  $('#newName').value=
+    me.name;
+
+  av($('#bigAv'),me);
+
+  loadNotifications();
+}
+
+$('#switchBtn').onclick=()=>{
+  setAuth(
+    authMode==='login'
+    ?'register'
+    :'login'
+  );
+};
+
+$('#authBtn').onclick=async()=>{
+
+  const name=$('#name').value.trim();
+  const p=$('#password').value;
+  const p2=$('#password2').value;
+
+  $('#authErr').textContent='';
+
+  if(
+    !name||
+    p.length<4
+  ){
+    return $('#authErr').textContent=
+      'Nom et mot de passe requis (4 caractères minimum).';
+  }
+
+  if(
+    authMode==='register' &&
+    p!==p2
+  ){
+    return $('#authErr').textContent=
+      'Les deux mots de passe ne correspondent pas.';
+  }
+
+  try{
+
+    const d=await api(
+      authMode==='login'
+      ?'/api/login'
+      :'/api/register',
+      {
+        method:'POST',
+        body:JSON.stringify({
+          name,
+          password:p
+        })
+      }
+    );
+
+    me=d.user;
+
+    showApp();
+
+    await loadUsers();
+
+  }catch(e){
+
+    $('#authErr').textContent=e.message;
+
+  }
+};
+
+$('#password').onkeydown=e=>{
+  if(e.key==='Enter'){
+    $('#authBtn').click();
+  }
+};
+
+$('#password2').onkeydown=e=>{
+  if(e.key==='Enter'){
+    $('#authBtn').click();
+  }
+};
+
+/* =========================
+   CONTACTS
+========================= */
+
+function getSavedContacts(){
+
+  try{
+
+    return JSON.parse(
+      localStorage.getItem('nova_contacts')||'[]'
+    );
+
+  }catch{
+
+    return[];
+
+  }
+}
+
+function saveContact(name){
+
+  const a=getSavedContacts();
+
+  if(
+    name &&
+    !a.includes(name)
+  ){
+
+    a.push(name);
+
+    localStorage.setItem(
+      'nova_contacts',
+      JSON.stringify(a)
+    );
+  }
+}
+
+function savedContact(name){
+
+  return getSavedContacts().includes(name);
+}
+
+async function loadUsers(){
+
+  try{
+
+    const q=encodeURIComponent(
+      $('#search').value.trim()
+    );
+
+    const d=await api(
+      '/api/users?q='+q
+    );
+
+    let list=d.users||[];
+
+    const saved=getSavedContacts();
+
+    if(!q){
+
+      list=list.filter(
+        u=>saved.includes(u.name)
+      );
+
+    }
+
+    renderUsers(list,q);
+
+    if(
+      !q &&
+      saved.length===0
+    ){
+
+      $('#contacts').innerHTML=
+        '<div class="empty">'+
+        'Aucun contact enregistré.<br>'+
+        '<small>Recherche une personne puis ouvre sa conversation pour l’ajouter.</small>'+
+        '</div>';
+
+    }
+
+  }catch(e){
+
+    if(e.message==='Non connecté'){
+      showAuth();
+    }
+
+  }
+}
+
+function renderUsers(users,isSearch=false){
+
+  const c=$('#contacts');
+
+  if(!users.length){
+
+    c.innerHTML=
+      '<div class="empty">'+
+      'Aucun contact enregistré.<br>'+
+      '<small>Utilise la recherche pour trouver une personne.</small>'+
+      '</div>';
+
+    return;
+  }
+
+  c.innerHTML=users.map(u=>{
+
+    const blockedTag=
+      u.blocked
+      ?'<span class="blocked-tag">Bloqué</span>'
+      :'';
+
+    const avHtml=
+      u.profilePhoto
+      ?`<img src="${esc(u.profilePhoto)}" onerror="this.style.display='none'">`
+      :esc(
+        (u.name||'?')
+        .slice(0,1)
+        .toUpperCase()
+      );
+
+    return `
+      <div
+        class="contact"
+        data-name="${esc(u.name)}"
+      >
+
+        <button
+          class="avatar avatar-btn"
+          title="Voir la photo de profil"
+        >
+          ${avHtml}
+        </button>
+
+        <div class="grow">
+
+          <b>${esc(u.name)}</b>
+
+          <small>
+            ${
+              u.blocked
+              ?blockedTag
+              :(savedContact(u.name)
+                ?'Contact enregistré'
+                :'Personne trouvée')
+            }
+          </small>
+
+        </div>
+
+        <button
+          class="secondary add-contact"
+          title="Ajouter aux contacts"
+        >
+          ${
+            savedContact(u.name)
+            ?'✓'
+            :'＋ Ajouter'
+          }
+        </button>
+
+        <span>
+          ${u.online?'🟢':'⚪'}
+        </span>
+
+      </div>
+    `;
+
+  }).join('');
+
+  c.querySelectorAll('.contact').forEach(x=>{
+
+    const name=x.dataset.name;
+
+    x.onclick=()=>{
+      openChat(name);
+    };
+
+    const avb=
+      x.querySelector('.avatar-btn');
+
+    avb.onclick=e=>{
+
+      e.stopPropagation();
+
+      openProfileByName(name);
+
+    };
+
+    const add=
+      x.querySelector('.add-contact');
+
+    if(add){
+
+      add.onclick=e=>{
+
+        e.stopPropagation();
+
+        saveContact(name);
+
+        add.textContent='✓';
+        add.title='Contact enregistré';
+
+        loadUsers();
+
+      };
+
+    }
+
+  });
+}
+
+function esc(s){
+
+  return String(s||'').replace(
+    /[&<>"']/g,
+    m=>({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#39;'
+    }[m])
+  );
+}
+
+/* =========================
+   OPEN CHAT
+========================= */
+
+async function openChat(name){
+
+  try{
+
+    current=await api(
+      '/api/user?name='+encodeURIComponent(name)
+    );
+
+    if(!current)return;
+
+    saveContact(current.name);
+
+    $('#chatName').textContent=
+      current.name;
+
+    av($('#chatAv'),current);
+
+    const bs=await api(
+      '/api/block/status?name='+
+      encodeURIComponent(current.name)
+    );
+
+    setBlockButton(
+      !!bs.blocked
+    );
+
+    $('#chat').classList.remove('hidden');
+
+    clearPending();
+
+    await loadMessages(true);
+    await loadUsers();
+
+  }catch(e){
+
+    alert(e.message);
+
+  }
+}
+
+async function openProfileByName(name){
+
+  try{
+
+    const u=await api(
+      '/api/user?name='+
+      encodeURIComponent(name)
+    );
+
+    showProfile(u);
+
+  }catch(e){
+
+    alert(e.message);
+
+  }
+}
+
+function setBlockButton(isBlocked){
+
+  $('#blockBtn').textContent=
+    isBlocked
+    ?'🔓'
+    :'🚫';
+
+  $('#blockBtn').title=
+    isBlocked
+    ?'Débloquer'
+    :'Bloquer';
+
+  $('#chatStatus').textContent=
+    isBlocked
+    ?'Conversation bloquée — le contact reste visible'
+    :'Conversation privée';
+}
+
+/* =========================
+   NOTIFICATIONS
+========================= */
+
+async function loadNotifications(){
+
+  try{
+
+    const d=await api(
+      '/api/notifications'
+    );
+
+    const saved=getSavedContacts();
+
+    const arr=
+      (d.notifications||[])
+      .filter(
+        n=>n.fromName &&
+        !saved.includes(n.fromName)
+      );
+
+    const box=$('#notificationList');
+
+    if(!arr.length){
+
+      box.innerHTML=
+        '<div class="empty">'+
+        'Aucune notification de nouveau contact.'+
+        '</div>';
+
+    }else{
+
+      box.innerHTML=arr.map(n=>`
+
+        <div
+          class="notification ${n.read?'':'unread'}"
+        >
+
+          <div class="avatar">
+            ${esc(
+              (n.fromName||'?')
+              .slice(0,1)
+              .toUpperCase()
+            )}
+          </div>
+
+          <div class="grow">
+
+            <b>
+              ${esc(
+                n.fromName||'Utilisateur'
+              )}
+            </b>
+
+            <div class="small">
+              Vous a envoyé un message.
+            </div>
+
+          </div>
+
+          <button
+            class="primary notif-open"
+            data-name="${esc(n.fromName||'')}"
+          >
+            Voir
+          </button>
+
+        </div>
+
+      `).join('');
+
+      box.querySelectorAll('.notif-open')
+      .forEach(b=>{
+
+        b.onclick=()=>{
+
+          const name=b.dataset.name;
+
+          saveContact(name);
+
+          closeNotifications();
+
+          openChat(name);
+
+        };
+
+      });
+
+    }
+
+    const unread=
+      arr.filter(n=>!n.read).length;
+
+    $('#notifyBadge').textContent=
+      String(unread);
+
+    $('#notifyBadge').classList.toggle(
+      'hidden',
+      unread===0
+    );
+
+  }catch(e){
+
+    console.log(e.message);
+
+  }
+}
+
+function openNotifications(){
+
+  loadNotifications();
+
+  $('#notifyPage')
+    .classList.add('open');
+}
+
+function closeNotifications(){
+
+  $('#notifyPage')
+    .classList.remove('open');
+
+  loadUsers();
+}
+
+/* =========================
+   MEDIA TYPE
+   CORRIGÉ POUR LES VOCAUX
+========================= */
+
+function mediaKind(m){
+
+  const t=
+    String(m.type||'')
+    .toLowerCase()
+    .trim();
+
+  const mime=
+    String(m.mime||'')
+    .toLowerCase()
+    .trim();
+
+  const url=
+    String(m.mediaUrl||'')
+    .toLowerCase();
+
+  /*
+    Tous les noms possibles pour
+    un message vocal sont acceptés.
+  */
+
+  if(
+    t==='audio' ||
+    t==='voice' ||
+    t==='vocal' ||
+    t==='voicemessage' ||
+    t==='voice_message' ||
+    t==='voice-message' ||
+    mime.startsWith('audio/') ||
+    /\.(weba|webm|wav|wave|oga|ogg|m4a|mp3|aac)(?:$|\?)/.test(url)
+  ){
+
+    return 'audio';
+
+  }
+
+  if(
+    t==='video' ||
+    mime.startsWith('video/') ||
+    /\.(mp4|webm|ogv|mov)(?:$|\?)/.test(url)
+  ){
+
+    return 'video';
+
+  }
+
+  if(
+    t==='image' ||
+    mime.startsWith('image/') ||
+    /\.(jpg|jpeg|png|webp|gif)(?:$|\?)/.test(url)
+  ){
+
+    return 'image';
+
+  }
+
+  return t;
+}
+
+/* =========================
+   MESSAGE HTML
+========================= */
+
+function messageHtml(m){
+
+  if(
+    m.deletedEverywhere ||
+    m.type==='deleted'
+  ){
+
+    return `
+      <div class="deleted-msg">
+        🗑️ Message supprimé pour tout le monde
+      </div>
+    `;
+
+  }
+
+  let media='';
+
+  const kind=mediaKind(m);
+
+  if(
+    m.mediaUrl &&
+    kind==='image'
+  ){
+
+    media=`
+      <div class="media-msg">
+        <img
+          src="${esc(m.mediaUrl)}"
+          loading="lazy"
+          onclick="window.open('${esc(m.mediaUrl)}','_blank')"
+        >
+      </div>
+    `;
+
+  }
+
+  else if(
+    m.mediaUrl &&
+    kind==='video'
+  ){
+
+    media=`
+      <div class="media-msg">
+
+        <video
+          src="${esc(m.mediaUrl)}"
+          controls
+          preload="metadata"
+          playsinline
+        ></video>
+
+      </div>
+    `;
+
+  }
+
+  /*
+    LECTEUR VOCAL CORRIGÉ
+  */
+
+  else if(
+    m.mediaUrl &&
+    kind==='audio'
+  ){
+
+    media=`
+
+      <div class="media-msg voice-msg">
+
+        <span class="voice-icon">
+          🎙️
+        </span>
+
+        <div class="voice-player">
+
+          <audio
+            class="voice-audio"
+            src="${esc(m.mediaUrl)}"
+            preload="metadata"
+            playsinline
+          ></audio>
+
+          <button
+            type="button"
+            class="voice-play"
+            aria-label="Lire le vocal"
+            title="Lire / pause"
+          >
+            ▶️
+          </button>
+
+          <button
+            type="button"
+            class="voice-stop"
+            aria-label="Arrêter le vocal"
+            title="Arrêter"
+          >
+            ⏹️
+          </button>
+
+          <input
+            class="voice-progress"
+            type="range"
+            min="0"
+            max="100"
+            value="0"
+            step="0.1"
+            aria-label="Progression"
+          >
+
+          <span class="voice-duration">
+            0:00
+          </span>
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+  const text=
+    m.text
+    ?`<div>${esc(m.text)}</div>`
+    :'';
+
+  return media+text;
+}
+
+/* =========================
+   LECTEURS VOCAUX
+========================= */
+
+function setupVoicePlayers(){
+
+  document
+    .querySelectorAll('.voice-player')
+    .forEach(player=>{
+
+      const audio=
+        player.querySelector('.voice-audio');
+
+      const play=
+        player.querySelector('.voice-play');
+
+      const stop=
+        player.querySelector('.voice-stop');
+
+      const progress=
+        player.querySelector('.voice-progress');
+
+      const time=
+        player.querySelector('.voice-duration');
+
+      if(
+        !audio ||
+        !play ||
+        !progress ||
+        !time
+      ){
+        return;
+      }
+
+      const fmt=v=>{
+
+        v=Number(v)||0;
+
+        const m=
+          Math.floor(v/60);
+
+        const s=
+          Math.floor(v%60);
+
+        return (
+          m+
+          ':'+
+          String(s).padStart(2,'0')
+        );
+      };
+
+      /* LECTURE / PAUSE */
+
+      play.onclick=async()=>{
+
+        try{
+
+          if(audio.paused){
+
+            /*
+              Arrête les autres vocaux
+            */
+
+            document
+              .querySelectorAll('.voice-audio')
+              .forEach(a=>{
+
+                if(a!==audio){
+
+                  a.pause();
+                  a.currentTime=0;
+
+                  const other=
+                    a.closest('.voice-player');
+
+                  const otherButton=
+                    other?.querySelector(
+                      '.voice-play'
+                    );
+
+                  if(otherButton){
+                    otherButton.textContent='▶️';
+                  }
+
+                }
+
+              });
+
+            await audio.play();
+
+            play.textContent='⏸️';
+
+          }else{
+
+            audio.pause();
+
+            play.textContent='▶️';
+
+          }
+
+        }catch(e){
+
+          console.error(e);
+
+          alert(
+            'Impossible de lire ce vocal sur ce navigateur.'
+          );
+
+        }
+
+      };
+
+      /* ARRÊT COMPLET */
+
+      if(stop){
+
+        stop.onclick=()=>{
+
+          audio.pause();
+
+          audio.currentTime=0;
+
+          progress.value=0;
+
+          play.textContent='▶️';
+
+          time.textContent=
+            audio.duration &&
+            isFinite(audio.duration)
+            ?fmt(audio.duration)
+            :'0:00';
+
+        };
+
+      }
+
+      /* DURÉE */
+
+      audio.onloadedmetadata=()=>{
+
+        if(
+          isFinite(audio.duration)
+        ){
+
+          time.textContent=
+            fmt(audio.duration);
+
+        }
+
+      };
+
+      /* PROGRESSION */
+
+      audio.ontimeupdate=()=>{
+
+        if(
+          audio.duration &&
+          isFinite(audio.duration)
+        ){
+
+          progress.value=
+            (audio.currentTime/
+             audio.duration)*100;
+
+          time.textContent=
+            fmt(audio.currentTime)+
+            ' / '+
+            fmt(audio.duration);
+
+        }
+
+      };
+
+      /* BARRE CLIQUABLE */
+
+      progress.oninput=()=>{
+
+        if(
+          audio.duration &&
+          isFinite(audio.duration)
+        ){
+
+          audio.currentTime=
+            (Number(progress.value)/100)*
+            audio.duration;
+
+        }
+
+      };
+
+      /* FIN DU VOCAL */
+
+      audio.onended=()=>{
+
+        play.textContent='▶️';
+
+        progress.value=100;
+
+        if(
+          audio.duration &&
+          isFinite(audio.duration)
+        ){
+
+          time.textContent=
+            fmt(audio.duration);
+
+        }
+
+      };
+
+      /* ERREUR */
+
+      audio.onerror=()=>{
+
+        play.textContent='⚠️';
+
+        time.textContent='Erreur';
+
+      };
+
+    });
+}
+
+/* =========================
+   MESSAGES
+========================= */
+
 let lastMessageSignature='';
-async function loadMessages(force=false){if(!current)return;const d=await api('/api/messages?with='+encodeURIComponent(current.name));const messages=Array.isArray(d.messages)?d.messages:[];const signature=messages.map(m=>[m.id,m.type,m.mediaUrl,m.mime,m.text,m.deletedEverywhere,(m.deletedFor||[]).join(',')].join('|')).join('\n');if(!force&&signature===lastMessageSignature)return;lastMessageSignature=signature;const box=$('#messages');box.innerHTML=messages.map(m=>{const mine=m.from===me.id;return `<div class="bubble ${mine?'me':'other'}" data-id="${esc(m.id)}"><div class="msg-row">${messageHtml(m)}<button class="msg-menu" title="Options" onclick="messageMenu('${esc(m.id)}',${mine})">⋮</button></div></div>`}).join('')||'<div class="empty">Aucun message. Commence la conversation.</div>';box.scrollTop=box.scrollHeight;setupVoicePlayers()}
-async function send(){const text=$('#message').value.trim();if(!text&&!pendingMedia)return;if(!current)return;try{let media=null;if(pendingMedia)media={mime:pendingMedia.type,data:await fileToData(pendingMedia)};$('#send').disabled=true;await api('/api/send',{method:'POST',body:JSON.stringify({to:current.name,text,media})});$('#message').value='';clearPending();await loadMessages()}catch(e){alert(e.message)}finally{$('#send').disabled=false}}
-$('#send').onclick=send;$('#message').onkeydown=e=>{if(e.key==='Enter')send()};$('#backChat').onclick=()=>{$('#chat').classList.add('hidden');current=null;lastMessageSignature=''};$('#refresh').onclick=loadUsers;$('#search').oninput=()=>{clearTimeout(timer);timer=setTimeout(loadUsers,250)};
-$('#settingsBtn').onclick=()=>{$('#sheet').classList.remove('hidden');applyTheme()};$('#closeSettings').onclick=()=>$('#sheet').classList.add('hidden');
-document.querySelectorAll('.setting-toggle').forEach(b=>b.onclick=()=>{const el=$('#'+b.dataset.target);el.classList.toggle('hidden');b.querySelector('span').textContent=el.classList.contains('hidden')?'›':'⌄'});
-$('#chatAvBtn').onclick=()=>showProfile(current);$('#bigAvBtn').onclick=()=>showProfile(me);$('#closeProfile').onclick=$('#profileClose2').onclick=()=>$('#profileView').classList.add('hidden');
-async function deleteMessage(id,mode){try{await api('/api/delete',{method:'POST',body:JSON.stringify({id,mode})});await loadMessages()}catch(e){alert(e.message)}}
-function messageMenu(id,mine){const all=mine?confirm('OK = supprimer pour tout le monde\nAnnuler = supprimer seulement pour moi'):false;if(mine&&all)return deleteMessage(id,'everyone');if(confirm('Supprimer ce message seulement pour vous ?'))return deleteMessage(id,'me')}
-$('#photoBtn').onclick=()=>{$('#mediaFile').accept='image/*';$('#mediaFile').click()};$('#videoBtn').onclick=()=>{$('#mediaFile').accept='video/*';$('#mediaFile').click()};$('#mediaFile').onchange=()=>prepareMedia($('#mediaFile').files[0]);$('#clearMedia').onclick=clearPending;
-$('#photoBtn').onclick=()=>{$('#mediaPickerMenu').classList.remove('show');$('#mediaFile').accept='image/*';$('#mediaFile').click()};$('#videoBtn').onclick=()=>{$('#mediaPickerMenu').classList.remove('show');$('#mediaFile').accept='video/*';$('#mediaFile').click()};$('#mediaFile').onchange=()=>prepareMedia($('#mediaFile').files[0]);$('#clearMedia').onclick=clearPending;
-let recorder=null,audioStream=null,audioChunks=[],voiceStartedAt=0,voiceTimer=null,voiceRecording=false,voiceMime='',voiceCancel=false;
-function updateVoiceTimer(){if(!voiceRecording)return;const sec=Math.floor((Date.now()-voiceStartedAt)/1000);const mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');$('#voiceCounter').textContent=mm+':'+ss}
-function stopVoice(cancel=false){if(!voiceRecording)return;voiceCancel=!!cancel;voiceRecording=false;if(voiceTimer){clearInterval(voiceTimer);voiceTimer=null}const r=recorder;recorder=null;if(r&&r.state!=='inactive')r.stop();if(audioStream)audioStream.getTracks().forEach(t=>t.stop());audioStream=null;$('#voiceStatus').classList.remove('show');$('#voiceBtn').classList.remove('recording');$('#voiceBtn').textContent='🎙️';if(cancel){audioChunks=[];return}}
-async function finishVoice(){const chunks=audioChunks.splice(0);if(!chunks.length){alert('Aucun son enregistré.');return}const type=voiceMime||chunks[0].type||'audio/webm';const blob=new Blob(chunks,{type});if(!blob.size){alert('Aucun son enregistré.');return}let ext=type.includes('wav')||type.includes('wave')?'wav':type.includes('ogg')?'oga':type.includes('mp4')?'m4a':type.includes('mpeg')?'mp3':'weba';pendingMedia=new File([blob],`vocal-${Date.now()}.${ext}`,{type});$('#attachName').textContent='Message vocal';const url=URL.createObjectURL(blob);$('#previewContent').innerHTML=`<audio controls preload="metadata" playsinline src="${url}"></audio>`;$('#mediaPreview').classList.add('show')}
-$('#voiceBtn').onclick=async()=>{if(voiceRecording){stopVoice(false);return}if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return alert('Le navigateur ne permet pas l’enregistrement vocal ici.');try{audioStream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});const candidates=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg','audio/mp4'];voiceMime=candidates.find(x=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(x))||'';recorder=voiceMime?new MediaRecorder(audioStream,{mimeType:voiceMime}):new MediaRecorder(audioStream);audioChunks=[];recorder.ondataavailable=e=>{if(e.data&&e.data.size)audioChunks.push(e.data)};recorder.onerror=()=>{voiceRecording=false;if(voiceTimer)clearInterval(voiceTimer);voiceTimer=null;if(audioStream)audioStream.getTracks().forEach(t=>t.stop());audioStream=null;recorder=null;$('#voiceStatus').classList.remove('show');$('#voiceBtn').classList.remove('recording');$('#voiceBtn').textContent='🎙️';alert('Erreur pendant l’enregistrement vocal.')};recorder.onstop=async()=>{if(audioStream)audioStream.getTracks().forEach(t=>t.stop());audioStream=null;if(voiceCancel){audioChunks=[];voiceCancel=false;return}await finishVoice()};voiceCancel=false;recorder.start(250);voiceRecording=true;voiceStartedAt=Date.now();updateVoiceTimer();voiceTimer=setInterval(updateVoiceTimer,250);$('#voiceStatus').classList.add('show');$('#voiceBtn').classList.add('recording');$('#voiceBtn').textContent='⏹️';}catch(e){if(audioStream)audioStream.getTracks().forEach(t=>t.stop());audioStream=null;recorder=null;alert('Microphone refusé ou indisponible : '+e.message)}};
-$('#cancelVoice').onclick=()=>stopVoice(true);
-$('#mediaMenuBtn').onclick=e=>{e.stopPropagation();$('#mediaPickerMenu').classList.toggle('show')};document.addEventListener('click',e=>{if(!e.target.closest('#mediaPickerMenu')&&!e.target.closest('#mediaMenuBtn'))$('#mediaPickerMenu').classList.remove('show')});
-$('#saveName').onclick=async()=>{try{const d=await api('/api/profile/name',{method:'POST',body:JSON.stringify({name:$('#newName').value.trim()})});const oldName=me.name;me=d.user;const sc=getSavedContacts().map(n=>n===oldName?me.name:n);localStorage.setItem('nova_contacts',JSON.stringify([...new Set(sc)]));showApp();$('#sheet').classList.remove('hidden');$('#profileMsg').textContent='Nom enregistré.';await loadUsers()}catch(e){$('#profileMsg').textContent=e.message}};
-$('#savePw').onclick=async()=>{const a=$('#currentPw').value,b=$('#newPw').value,c=$('#confirmPw').value;$('#pwMsg').textContent='';if(b!==c)return $('#pwMsg').textContent='Les deux nouveaux mots de passe ne correspondent pas.';try{await api('/api/profile/password',{method:'POST',body:JSON.stringify({currentPassword:a,newPassword:b})});$('#currentPw').value=$('#newPw').value=$('#confirmPw').value='';$('#pwMsg').textContent='Mot de passe modifié avec succès.'}catch(e){$('#pwMsg').textContent=e.message}};
-$('#savePhoto').onclick=()=>{const f=$('#photoFile').files[0];if(!f)return $('#photoMsg').textContent='Choisis une image.';const r=new FileReader();r.onload=async()=>{try{const d=await api('/api/profile/photo',{method:'POST',body:JSON.stringify({data:r.result})});me.profilePhoto=d.profilePhoto;showApp();$('#photoMsg').textContent='Photo enregistrée.';await loadUsers()}catch(e){$('#photoMsg').textContent=e.message}};r.readAsDataURL(f)};
-$('#darkBtn').onclick=()=>{localStorage.setItem('axess_dark',localStorage.getItem('axess_dark')==='1'?'0':'1');applyTheme()};COLORS.forEach(c=>{const b=document.createElement('button');b.className='sw';b.dataset.c=c;b.style.background=c;b.onclick=()=>{localStorage.setItem('axess_color',c);applyTheme()};$('#colors').appendChild(b)});
-$('#logout').onclick=async()=>{try{await api('/api/logout',{method:'POST'})}catch{};showAuth();setAuth('login');};
-$('#blockBtn').onclick=async()=>{if(!current)return;try{const bs=await api('/api/block/status?name='+encodeURIComponent(current.name));const d=await api('/api/block',{method:'POST',body:JSON.stringify({name:current.name,block:!!bs.blocked?false:true})});setBlockButton(!!d.blocked);await loadUsers();await loadNotifications()}catch(e){alert(e.message)}};
-setInterval(async()=>{if(me&&current&&!$('#chat').classList.contains('hidden'))try{await loadMessages()}catch{}},4000);setInterval(async()=>{if(me)try{await loadNotifications()}catch{}},5000);$('#notifyBtn').onclick=openNotifications;$('#notifyBack').onclick=closeNotifications;$('#markNotifications').onclick=async()=>{try{await api('/api/notifications/read',{method:'POST'});await loadNotifications()}catch(e){}};
-let touchStartX=0;document.addEventListener('touchstart',e=>{touchStartX=e.changedTouches[0].clientX},{passive:true});document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-touchStartX;if(Math.abs(dx)<60)return;if(dx<0&&me&&$('#chat').classList.contains('hidden')&&!$('#sheet').classList.contains('hidden')===false)openNotifications();else if(dx>0&&$('#notifyPage').classList.contains('open'))closeNotifications()},{passive:true});
-setInterval(async()=>{if(me)try{const h=await api('/api/health');$('#online').textContent='🟢 '+Number(h.onlineCount||0)+' en ligne'}catch{}},5000);
+
+async function loadMessages(force=false){
+
+  if(!current)return;
+
+  const d=await api(
+    '/api/messages?with='+
+    encodeURIComponent(current.name)
+  );
+
+  const messages=
+    Array.isArray(d.messages)
+    ?d.messages
+    :[];
+
+  const signature=
+    messages.map(m=>[
+      m.id,
+      m.type,
+      m.mediaUrl,
+      m.mime,
+      m.text,
+      m.deletedEverywhere,
+      (m.deletedFor||[]).join(',')
+    ].join('|')).join('\n');
+
+  if(
+    !force &&
+    signature===lastMessageSignature
+  ){
+    return;
+  }
+
+  lastMessageSignature=
+    signature;
+
+  const box=$('#messages');
+
+  box.innerHTML=
+    messages.map(m=>{
+
+      const mine=
+        m.from===me.id;
+
+      return `
+
+        <div
+          class="bubble ${mine?'me':'other'}"
+          data-id="${esc(m.id)}"
+        >
+
+          <div class="msg-row">
+
+            <div>
+              ${messageHtml(m)}
+            </div>
+
+            <button
+              class="msg-menu"
+              title="Options"
+              onclick="messageMenu('${esc(m.id)}',${mine})"
+            >
+              ⋮
+            </button>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }).join('') ||
+
+    `
+      <div class="empty">
+        Aucun message.
+        Commence la conversation.
+      </div>
+    `;
+
+  box.scrollTop=
+    box.scrollHeight;
+
+  setupVoicePlayers();
+}
+
+/* =========================
+   SEND
+========================= */
+
+async function send(){
+
+  const text=
+    $('#message').value.trim();
+
+  if(
+    !text &&
+    !pendingMedia
+  ){
+    return;
+  }
+
+  if(!current)return;
+
+  try{
+
+    let media=null;
+
+    if(pendingMedia){
+
+      media={
+        mime:pendingMedia.type,
+        data:await fileToData(
+          pendingMedia
+        )
+      };
+
+    }
+
+    $('#send').disabled=true;
+
+    await api(
+      '/api/send',
+      {
+        method:'POST',
+        body:JSON.stringify({
+          to:current.name,
+          text,
+          media
+        })
+      }
+    );
+
+    $('#message').value='';
+
+    clearPending();
+
+    await loadMessages(true);
+
+  }catch(e){
+
+    alert(e.message);
+
+  }finally{
+
+    $('#send').disabled=false;
+
+  }
+}
+
+$('#send').onclick=send;
+
+$('#message').onkeydown=e=>{
+
+  if(e.key==='Enter'){
+    send();
+  }
+
+};
+
+$('#backChat').onclick=()=>{
+
+  $('#chat').classList.add('hidden');
+
+  current=null;
+
+  lastMessageSignature='';
+
+};
+
+$('#refresh').onclick=
+  loadUsers;
+
+$('#search').oninput=()=>{
+
+  clearTimeout(timer);
+
+  timer=setTimeout(
+    loadUsers,
+    250
+  );
+
+};
+
+/* =========================
+   SETTINGS
+========================= */
+
+$('#settingsBtn').onclick=()=>{
+
+  $('#sheet').classList.remove('hidden');
+
+  applyTheme();
+
+};
+
+$('#closeSettings').onclick=()=>{
+
+  $('#sheet').classList.add('hidden');
+
+};
+
+document
+  .querySelectorAll('.setting-toggle')
+  .forEach(b=>{
+
+    b.onclick=()=>{
+
+      const el=
+        $('#'+b.dataset.target);
+
+      el.classList.toggle(
+        'hidden'
+      );
+
+      b.querySelector('span')
+        .textContent=
+        el.classList.contains('hidden')
+        ?'›'
+        :'⌄';
+
+    };
+
+  });
+
+/* =========================
+   PROFILE
+========================= */
+
+$('#chatAvBtn').onclick=()=>{
+
+  showProfile(current);
+
+};
+
+$('#bigAvBtn').onclick=()=>{
+
+  showProfile(me);
+
+};
+
+$('#closeProfile').onclick=
+$('#profileClose2').onclick=()=>{
+
+  $('#profileView')
+    .classList.add('hidden');
+
+};
+
+/* =========================
+   DELETE MESSAGE
+========================= */
+
+async function deleteMessage(id,mode){
+
+  try{
+
+    await api(
+      '/api/delete',
+      {
+        method:'POST',
+        body:JSON.stringify({
+          id,
+          mode
+        })
+      }
+    );
+
+    await loadMessages(true);
+
+  }catch(e){
+
+    alert(e.message);
+
+  }
+}
+
+function messageMenu(id,mine){
+
+  const all=
+    mine
+    ?confirm(
+      'OK = supprimer pour tout le monde\n'+
+      'Annuler = supprimer seulement pour moi'
+    )
+    :false;
+
+  if(
+    mine &&
+    all
+  ){
+
+    return deleteMessage(
+      id,
+      'everyone'
+    );
+
+  }
+
+  if(
+    confirm(
+      'Supprimer ce message seulement pour vous ?'
+    )
+  ){
+
+    return deleteMessage(
+      id,
+      'me'
+    );
+
+  }
+}
+
+/* =========================
+   PHOTO / VIDEO
+========================= */
+
+$('#photoBtn').onclick=()=>{
+
+  $('#mediaPickerMenu')
+    .classList.remove('show');
+
+  $('#mediaFile').accept=
+    'image/*';
+
+  $('#mediaFile').click();
+
+};
+
+$('#videoBtn').onclick=()=>{
+
+  $('#mediaPickerMenu')
+    .classList.remove('show');
+
+  $('#mediaFile').accept=
+    'video/*';
+
+  $('#mediaFile').click();
+
+};
+
+$('#mediaFile').onchange=()=>{
+
+  prepareMedia(
+    $('#mediaFile').files[0]
+  );
+
+};
+
+$('#clearMedia').onclick=
+  clearPending;
+
+/* =========================
+   MENU MEDIA
+========================= */
+
+$('#mediaMenuBtn').onclick=e=>{
+
+  e.stopPropagation();
+
+  $('#mediaPickerMenu')
+    .classList.toggle('show');
+
+};
+
+document.addEventListener(
+  'click',
+  e=>{
+
+    if(
+      !e.target.closest(
+        '#mediaPickerMenu'
+      ) &&
+      !e.target.closest(
+        '#mediaMenuBtn'
+      )
+    ){
+
+      $('#mediaPickerMenu')
+        .classList.remove('show');
+
+    }
+
+  }
+);
+
+/* =========================
+   ENREGISTREMENT VOCAL
+========================= */
+
+let recorder=null;
+let audioStream=null;
+let audioChunks=[];
+let voiceStartedAt=0;
+let voiceTimer=null;
+let voiceRecording=false;
+let voiceMime='';
+let voiceCancel=false;
+
+function updateVoiceTimer(){
+
+  if(!voiceRecording)return;
+
+  const sec=
+    Math.floor(
+      (Date.now()-voiceStartedAt)/1000
+    );
+
+  const mm=
+    String(
+      Math.floor(sec/60)
+    ).padStart(2,'0');
+
+  const ss=
+    String(
+      sec%60
+    ).padStart(2,'0');
+
+  $('#voiceCounter').textContent=
+    mm+':'+ss;
+}
+
+function stopVoice(cancel=false){
+
+  if(!voiceRecording)return;
+
+  voiceCancel=!!cancel;
+
+  voiceRecording=false;
+
+  if(voiceTimer){
+
+    clearInterval(
+      voiceTimer
+    );
+
+    voiceTimer=null;
+
+  }
+
+  const r=recorder;
+
+  recorder=null;
+
+  if(
+    r &&
+    r.state!=='inactive'
+  ){
+
+    r.stop();
+
+  }
+
+  if(audioStream){
+
+    audioStream
+      .getTracks()
+      .forEach(t=>t.stop());
+
+  }
+
+  audioStream=null;
+
+  $('#voiceStatus')
+    .classList.remove('show');
+
+  $('#voiceBtn')
+    .classList.remove('recording');
+
+  $('#voiceBtn').textContent=
+    '🎙️';
+
+  if(cancel){
+
+    audioChunks=[];
+
+    voiceCancel=false;
+
+  }
+}
+
+async function finishVoice(){
+
+  const chunks=
+    audioChunks.splice(0);
+
+  if(!chunks.length){
+
+    alert(
+      'Aucun son enregistré.'
+    );
+
+    return;
+
+  }
+
+  const type=
+    voiceMime ||
+    chunks[0].type ||
+    'audio/webm';
+
+  const blob=
+    new Blob(
+      chunks,
+      {type}
+    );
+
+  if(!blob.size){
+
+    alert(
+      'Aucun son enregistré.'
+    );
+
+    return;
+
+  }
+
+  let ext='weba';
+
+  if(
+    type.includes('wav') ||
+    type.includes('wave')
+  ){
+
+    ext='wav';
+
+  }else if(
+    type.includes('ogg')
+  ){
+
+    ext='oga';
+
+  }else if(
+    type.includes('mp4')
+  ){
+
+    ext='m4a';
+
+  }else if(
+    type.includes('mpeg')
+  ){
+
+    ext='mp3';
+
+  }else if(
+    type.includes('webm')
+  ){
+
+    ext='webm';
+
+  }
+
+  pendingMedia=
+    new File(
+      [blob],
+      `vocal-${Date.now()}.${ext}`,
+      {type}
+    );
+
+  $('#attachName').textContent=
+    'Message vocal';
+
+  const url=
+    URL.createObjectURL(blob);
+
+  $('#previewContent').innerHTML=`
+    <audio
+      controls
+      preload="metadata"
+      playsinline
+      src="${url}"
+    ></audio>
+  `;
+
+  $('#mediaPreview')
+    .classList.add('show');
+}
+
+$('#voiceBtn').onclick=async()=>{
+
+  /*
+    Si on enregistre déjà,
+    le bouton devient STOP.
+  */
+
+  if(voiceRecording){
+
+    stopVoice(false);
+
+    return;
+
+  }
+
+  if(
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ){
+
+    return alert(
+      'Le navigateur ne permet pas l’enregistrement vocal ici.'
+    );
+
+  }
+
+  try{
+
+    audioStream=
+      await navigator.mediaDevices
+        .getUserMedia({
+          audio:{
+            channelCount:1,
+            echoCancellation:true,
+            noiseSuppression:true,
+            autoGainControl:true
+          }
+        });
+
+    const candidates=[
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+      'audio/mp4'
+    ];
+
+    voiceMime=
+      candidates.find(
+        x=>
+          window.MediaRecorder &&
+          MediaRecorder.isTypeSupported &&
+          MediaRecorder.isTypeSupported(x)
+      )||'';
+
+    recorder=
+      voiceMime
+      ?new MediaRecorder(
+        audioStream,
+        {mimeType:voiceMime}
+      )
+      :new MediaRecorder(
+        audioStream
+      );
+
+    audioChunks=[];
+
+    recorder.ondataavailable=e=>{
+
+      if(
+        e.data &&
+        e.data.size
+      ){
+
+        audioChunks.push(
+          e.data
+        );
+
+      }
+
+    };
+
+    recorder.onerror=()=>{
+
+      voiceRecording=false;
+
+      if(voiceTimer){
+
+        clearInterval(
+          voiceTimer
+        );
+
+        voiceTimer=null;
+
+      }
+
+      if(audioStream){
+
+        audioStream
+          .getTracks()
+          .forEach(t=>t.stop());
+
+      }
+
+      audioStream=null;
+      recorder=null;
+
+      $('#voiceStatus')
+        .classList.remove('show');
+
+      $('#voiceBtn')
+        .classList.remove('recording');
+
+      $('#voiceBtn').textContent=
+        '🎙️';
+
+      alert(
+        'Erreur pendant l’enregistrement vocal.'
+      );
+
+    };
+
+    recorder.onstop=async()=>{
+
+      if(audioStream){
+
+        audioStream
+          .getTracks()
+          .forEach(t=>t.stop());
+
+      }
+
+      audioStream=null;
+
+      if(voiceCancel){
+
+        audioChunks=[];
+        voiceCancel=false;
+
+        return;
+
+      }
+
+      await finishVoice();
+
+    };
+
+    voiceCancel=false;
+
+    recorder.start(250);
+
+    voiceRecording=true;
+
+    voiceStartedAt=
+      Date.now();
+
+    updateVoiceTimer();
+
+    voiceTimer=
+      setInterval(
+        updateVoiceTimer,
+        250
+      );
+
+    $('#voiceStatus')
+      .classList.add('show');
+
+    $('#voiceBtn')
+      .classList.add('recording');
+
+    $('#voiceBtn').textContent=
+      '⏹️';
+
+  }catch(e){
+
+    if(audioStream){
+
+      audioStream
+        .getTracks()
+        .forEach(t=>t.stop());
+
+    }
+
+    audioStream=null;
+    recorder=null;
+
+    alert(
+      'Microphone refusé ou indisponible : '+
+      e.message
+    );
+
+  }
+
+};
+
+$('#cancelVoice').onclick=()=>{
+
+  stopVoice(true);
+
+};
+
+/* =========================
+   PROFIL NOM
+========================= */
+
+$('#saveName').onclick=async()=>{
+
+  try{
+
+    const d=await api(
+      '/api/profile/name',
+      {
+        method:'POST',
+        body:JSON.stringify({
+          name:
+            $('#newName').value.trim()
+        })
+      }
+    );
+
+    const oldName=me.name;
+
+    me=d.user;
+
+    const sc=
+      getSavedContacts()
+      .map(
+        n=>
+          n===oldName
+          ?me.name
+          :n
+      );
+
+    localStorage.setItem(
+      'nova_contacts',
+      JSON.stringify(
+        [...new Set(sc)]
+      )
+    );
+
+    showApp();
+
+    $('#sheet')
+      .classList.remove('hidden');
+
+    $('#profileMsg').textContent=
+      'Nom enregistré.';
+
+    await loadUsers();
+
+  }catch(e){
+
+    $('#profileMsg').textContent=
+      e.message;
+
+  }
+
+};
+
+/* =========================
+   PASSWORD
+========================= */
+
+$('#savePw').onclick=async()=>{
+
+  const a=
+    $('#currentPw').value;
+
+  const b=
+    $('#newPw').value;
+
+  const c=
+    $('#confirmPw').value;
+
+  $('#pwMsg').textContent='';
+
+  if(b!==c){
+
+    return $('#pwMsg').textContent=
+      'Les deux nouveaux mots de passe ne correspondent pas.';
+
+  }
+
+  try{
+
+    await api(
+      '/api/profile/password',
+      {
+        method:'POST',
+        body:JSON.stringify({
+          currentPassword:a,
+          newPassword:b
+        })
+      }
+    );
+
+    $('#currentPw').value='';
+    $('#newPw').value='';
+    $('#confirmPw').value='';
+
+    $('#pwMsg').textContent=
+      'Mot de passe modifié avec succès.';
+
+  }catch(e){
+
+    $('#pwMsg').textContent=
+      e.message;
+
+  }
+
+};
+
+/* =========================
+   PHOTO PROFILE
+========================= */
+
+$('#savePhoto').onclick=()=>{
+
+  const f=
+    $('#photoFile').files[0];
+
+  if(!f){
+
+    return $('#photoMsg').textContent=
+      'Choisis une image.';
+
+  }
+
+  const r=
+    new FileReader();
+
+  r.onload=async()=>{
+
+    try{
+
+      const d=await api(
+        '/api/profile/photo',
+        {
+          method:'POST',
+          body:JSON.stringify({
+            data:r.result
+          })
+        }
+      );
+
+      me.profilePhoto=
+        d.profilePhoto;
+
+      showApp();
+
+      $('#photoMsg').textContent=
+        'Photo enregistrée.';
+
+      await loadUsers();
+
+    }catch(e){
+
+      $('#photoMsg').textContent=
+        e.message;
+
+    }
+
+  };
+
+  r.readAsDataURL(f);
+
+};
+
+/* =========================
+   THEME / COULEURS
+========================= */
+
+$('#darkBtn').onclick=()=>{
+
+  localStorage.setItem(
+    'axess_dark',
+    localStorage.getItem('axess_dark')==='1'
+    ?'0'
+    :'1'
+  );
+
+  applyTheme();
+
+};
+
+COLORS.forEach(c=>{
+
+  const b=
+    document.createElement('button');
+
+  b.className='sw';
+
+  b.dataset.c=c;
+
+  b.style.background=c;
+
+  b.onclick=()=>{
+
+    localStorage.setItem(
+      'axess_color',
+      c
+    );
+
+    applyTheme();
+
+  };
+
+  $('#colors')
+    .appendChild(b);
+
+});
+
+/* =========================
+   LOGOUT
+========================= */
+
+$('#logout').onclick=async()=>{
+
+  try{
+
+    await api(
+      '/api/logout',
+      {method:'POST'}
+    );
+
+  }catch{}
+
+  showAuth();
+
+  setAuth('login');
+
+};
+
+/* =========================
+   BLOCK
+========================= */
+
+$('#blockBtn').onclick=async()=>{
+
+  if(!current)return;
+
+  try{
+
+    const bs=await api(
+      '/api/block/status?name='+
+      encodeURIComponent(
+        current.name
+      )
+    );
+
+    const d=await api(
+      '/api/block',
+      {
+        method:'POST',
+        body:JSON.stringify({
+          name:current.name,
+          block:!!bs.blocked
+            ?false
+            :true
+        })
+      }
+    );
+
+    setBlockButton(
+      !!d.blocked
+    );
+
+    await loadUsers();
+    await loadNotifications();
+
+  }catch(e){
+
+    alert(e.message);
+
+  }
+
+};
+
+/* =========================
+   AUTO REFRESH
+========================= */
+
+setInterval(
+  async()=>{
+    if(
+      me &&
+      current &&
+      !$('#chat')
+        .classList
+        .contains('hidden')
+    ){
+
+      try{
+        await loadMessages();
+      }catch{}
+
+    }
+  },
+  4000
+);
+
+setInterval(
+  async()=>{
+
+    if(me){
+
+      try{
+        await loadNotifications();
+      }catch{}
+
+    }
+
+  },
+  5000
+);
+
+$('#notifyBtn').onclick=
+  openNotifications;
+
+$('#notifyBack').onclick=
+  closeNotifications;
+
+$('#markNotifications').onclick=
+  async()=>{
+
+    try{
+
+      await api(
+        '/api/notifications/read',
+        {method:'POST'}
+      );
+
+      await loadNotifications();
+
+    }catch{}
+
+  };
+
+/* =========================
+   SWIPE NOTIFICATIONS
+========================= */
+
+let touchStartX=0;
+
+document.addEventListener(
+  'touchstart',
+  e=>{
+    touchStartX=
+      e.changedTouches[0].clientX;
+  },
+  {passive:true}
+);
+
+document.addEventListener(
+  'touchend',
+  e=>{
+
+    const dx=
+      e.changedTouches[0].clientX-
+      touchStartX;
+
+    if(
+      Math.abs(dx)<60
+    ){
+      return;
+    }
+
+    if(
+      dx<0 &&
+      me &&
+      $('#chat')
+        .classList
+        .contains('hidden') &&
+      $('#sheet')
+        .classList
+        .contains('hidden')
+    ){
+
+      openNotifications();
+
+    }else if(
+      dx>0 &&
+      $('#notifyPage')
+        .classList
+        .contains('open')
+    ){
+
+      closeNotifications();
+
+    }
+
+  },
+  {passive:true}
+);
+
+/* =========================
+   ONLINE
+========================= */
+
+setInterval(
+  async()=>{
+
+    if(me){
+
+      try{
+
+        const h=
+          await api('/api/health');
+
+        $('#online').textContent=
+          '🟢 '+
+          Number(
+            h.onlineCount||0
+          )+
+          ' en ligne';
+
+      }catch{}
+
+    }
+
+  },
+  5000
+);
+
+/* =========================
+   START
+========================= */
+
 boot();
-</script></body></html>
+
+</script>
+
+</body>
+</html>
