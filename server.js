@@ -1,53 +1,132 @@
+/*
+ * NovaChat — serveur avec base de données SQLite (better-sqlite3)
+ * -----------------------------------------------------------------
+ * Ce fichier remplace la version qui stockait tout dans des fichiers
+ * JSON. La logique des routes est la même que server.js (avec les
+ * correctifs de sécurité : limitation des tentatives de connexion,
+ * mot de passe admin aléatoire à la première exécution, et vérification
+ * du contenu réel des fichiers envoyés).
+ *
+ * Installation :
+ *   npm install better-sqlite3
+ *
+ * Démarrage : node server.sqlite.js
+ * La base est créée automatiquement dans ./novachat.db au premier lancement.
+ */
 const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto');
-const game=require('./game-server.js');
+const Database=require('better-sqlite3');
+
 const PORT=Number(process.env.PORT||8080),HOST='0.0.0.0',APP=__dirname,ROOT=process.env.DATA_DIR||__dirname;
 const MAX_VIDEO_BYTES=60*1024*1024,MAX_BODY_BYTES=90*1024*1024,SESSION_MS=30*24*60*60*1000,ONLINE_MS=90*1000;
-const db={users:'users.json',messages:'messages.json',blocks:'blocks.json',notifications:'notifications.json',sessions:'sessions.json',admin:'admin.json',adminSessions:'admin_sessions.json',adminBlocks:'admin_blocks.json'};
+
+fs.mkdirSync(ROOT,{recursive:true});
+const db=new Database(path.join(ROOT,'novachat.db'));
+db.pragma('journal_mode = WAL');
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users(
+  id TEXT PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  salt TEXT NOT NULL,
+  passwordHash TEXT NOT NULL,
+  profilePhoto TEXT,
+  createdAt INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS messages(
+  id TEXT PRIMARY KEY,
+  "from" TEXT NOT NULL,
+  fromName TEXT,
+  "to" TEXT NOT NULL,
+  toName TEXT,
+  text TEXT,
+  type TEXT,
+  mediaUrl TEXT,
+  mime TEXT,
+  createdAt INTEGER NOT NULL,
+  deletedEverywhere INTEGER DEFAULT 0,
+  deletedFor TEXT DEFAULT '[]'
+);
+CREATE INDEX IF NOT EXISTS idx_messages_from ON messages("from");
+CREATE INDEX IF NOT EXISTS idx_messages_to ON messages("to");
+CREATE TABLE IF NOT EXISTS blocks(
+  a TEXT NOT NULL, b TEXT NOT NULL, createdAt INTEGER NOT NULL,
+  PRIMARY KEY(a,b)
+);
+CREATE TABLE IF NOT EXISTS admin_blocks(
+  userId TEXT PRIMARY KEY, createdAt INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS notifications(
+  id TEXT PRIMARY KEY, "to" TEXT NOT NULL, fromId TEXT, fromName TEXT,
+  createdAt INTEGER NOT NULL, read INTEGER DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS admin(
+  id INTEGER PRIMARY KEY CHECK(id=1),
+  salt TEXT NOT NULL, passwordHash TEXT NOT NULL,
+  createdAt INTEGER, updatedAt INTEGER, mustChange INTEGER DEFAULT 1
+);
+`);
+
 const sessions=new Map(),adminSessions=new Map(),sessionActivity=new Map();
-const loginAttempts=new Map(); // key -> {count, firstAt, blockedUntil}
+const loginAttempts=new Map();
 const RATE_WINDOW_MS=10*60*1000,RATE_MAX=8,RATE_BLOCK_MS=15*60*1000;
 function clientKey(req){return (req.headers['x-forwarded-for']||req.socket.remoteAddress||'unknown').split(',')[0].trim()}
 function checkRate(key){const now=Date.now();const r=loginAttempts.get(key);if(!r)return{blocked:false};if(r.blockedUntil&&r.blockedUntil>now)return{blocked:true,retryAfter:Math.ceil((r.blockedUntil-now)/1000)};if(r.blockedUntil&&r.blockedUntil<=now){loginAttempts.delete(key);return{blocked:false}}if(now-r.firstAt>RATE_WINDOW_MS){loginAttempts.delete(key);return{blocked:false}}return{blocked:false}}
 function registerFailure(key){const now=Date.now();const r=loginAttempts.get(key);if(!r||now-r.firstAt>RATE_WINDOW_MS){loginAttempts.set(key,{count:1,firstAt:now,blockedUntil:0});return}r.count++;if(r.count>=RATE_MAX)r.blockedUntil=now+RATE_BLOCK_MS;loginAttempts.set(key,r)}
 function registerSuccess(key){loginAttempts.delete(key)}
+
 const uid=()=>crypto.randomBytes(16).toString('hex'),salt=()=>crypto.randomBytes(16).toString('hex'),hash=(p,s)=>crypto.scryptSync(String(p),String(s),64).toString('hex');
 const safeEqual=(a,b)=>{try{const x=Buffer.from(String(a),'hex'),y=Buffer.from(String(b),'hex');return x.length===y.length&&crypto.timingSafeEqual(x,y)}catch{return false}};
-const read=f=>{const p=path.join(ROOT,f);if(!fs.existsSync(p))return[];try{return JSON.parse(fs.readFileSync(p,'utf8'))}catch(e){try{fs.copyFileSync(p,p+'.corrompu-'+Date.now())}catch{}console.error('Fichier illisible, NON écrasé :',f,e.message);throw new Error('DB_READ_ERROR')}};
-const write=(f,x)=>{const p=path.join(ROOT,f),t=p+'.tmp';fs.writeFileSync(t,JSON.stringify(x,null,2),'utf8');fs.renameSync(t,p)};
-function ensureFiles(){fs.mkdirSync(ROOT,{recursive:true});if(ROOT!==APP)for(const f of Object.values(db)){const src=path.join(APP,f),dst=path.join(ROOT,f);if(!fs.existsSync(dst)&&fs.existsSync(src)){fs.copyFileSync(src,dst);console.log('Données de départ copiées :',f)}}for(const f of [db.users,db.messages,db.blocks,db.notifications,db.sessions,db.adminSessions,db.adminBlocks])if(!fs.existsSync(path.join(ROOT,f)))fs.writeFileSync(path.join(ROOT,f),'[]','utf8');for(const d of ['profiles','media'])if(!fs.existsSync(path.join(ROOT,d)))fs.mkdirSync(path.join(ROOT,d),{recursive:true});if(!fs.existsSync(path.join(ROOT,db.admin))){const s=salt();const initial=process.env.ADMIN_INITIAL_PASSWORD||crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);write(db.admin,{salt:s,passwordHash:hash(initial,s),createdAt:Date.now(),mustChange:true});console.log('========================================');console.log('Compte admin créé. Mot de passe initial : '+initial);console.log('Ce mot de passe doit être changé dès la première connexion.');console.log('========================================')}}
-function loadSessions(){const now=Date.now();for(const r of read(db.sessions))if(r&&r.token&&r.userId&&(!r.expiresAt||r.expiresAt>now)){sessions.set(r.token,r.userId);sessionActivity.set(r.token,Number(r.lastSeen)||0)}for(const r of read(db.adminSessions))if(r&&r.token&&r.expiresAt>now)adminSessions.set(r.token,{expiresAt:r.expiresAt})}
-function saveSessionFile(){const now=Date.now();write(db.sessions,[...sessions].map(([token,userId])=>({token,userId,expiresAt:now+SESSION_MS,lastSeen:sessionActivity.get(token)||0})))}
-function saveAdminSessions(){write(db.adminSessions,[...adminSessions].map(([token,v])=>({token,expiresAt:v.expiresAt})).filter(v=>v.expiresAt>Date.now()))}
-function cleanSessions(){for(const[t,v]of adminSessions)if(!v||v.expiresAt<=Date.now())adminSessions.delete(t);for(const t of [...sessionActivity.keys()])if(!sessions.has(t))sessionActivity.delete(t);saveSessionFile();saveAdminSessions()}
+
+function ensureFiles(){
+  for(const d of ['profiles','media'])if(!fs.existsSync(path.join(ROOT,d)))fs.mkdirSync(path.join(ROOT,d),{recursive:true});
+  const row=db.prepare('SELECT * FROM admin WHERE id=1').get();
+  if(!row){
+    const s=salt();
+    const initial=process.env.ADMIN_INITIAL_PASSWORD||crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+    db.prepare('INSERT INTO admin(id,salt,passwordHash,createdAt,mustChange) VALUES(1,?,?,?,1)').run(s,hash(initial,s),Date.now());
+    console.log('========================================');
+    console.log('Compte admin créé. Mot de passe initial : '+initial);
+    console.log('Ce mot de passe doit être changé dès la première connexion.');
+    console.log('========================================');
+  }
+}
+
 function cookies(req){const out={};for(const p of (req.headers.cookie||'').split(';')){if(!p.trim())continue;const i=p.indexOf('=');if(i<0)continue;const k=p.slice(0,i).trim(),v=p.slice(i+1).trim();try{out[k]=decodeURIComponent(v)}catch{out[k]=v}}return out}
 function cookie(name,token,req,max=SESSION_MS){const secure=req.headers['x-forwarded-proto']==='https'||process.env.RENDER==='true'?' Secure;':'';return `${name}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(max/1000)};${secure}`}
 function clearCookie(name,req){const secure=req.headers['x-forwarded-proto']==='https'||process.env.RENDER==='true'?' Secure;':'';return `${name}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax;${secure}`}
-function me(req){const t=cookies(req).nova_session||req.headers['x-token'];if(!t)return null;const id=sessions.get(t);if(!id)return null;if(adminBlocked(id)){sessions.delete(t);sessionActivity.delete(t);saveSessionFile();return null}const u=read(db.users).find(x=>x.id===id);if(!u){sessions.delete(t);sessionActivity.delete(t);saveSessionFile();return null}sessionActivity.set(t,Date.now());return u}
+
+function me(req){
+  const t=cookies(req).nova_session||req.headers['x-token'];if(!t)return null;
+  const id=sessions.get(t);if(!id)return null;
+  if(adminBlocked(id)){sessions.delete(t);sessionActivity.delete(t);return null}
+  const u=db.prepare('SELECT * FROM users WHERE id=?').get(id);
+  if(!u){sessions.delete(t);sessionActivity.delete(t);return null}
+  sessionActivity.set(t,Date.now());
+  return u;
+}
 function adminMe(req){const c=cookies(req);const t=c.nova_admin||String(req.headers['x-admin-token']||'');const v=t&&adminSessions.get(t);if(!v||v.expiresAt<=Date.now()){if(t&&adminSessions.has(t))adminSessions.delete(t);return false}return true}
+
 function body(req,max=MAX_BODY_BYTES){return new Promise((resolve,reject)=>{let s='',done=false;req.on('data',c=>{if(done)return;s+=c.toString();if(Buffer.byteLength(s)>max){done=true;reject(Error('Payload too large'));req.resume()}});req.on('end',()=>{if(!done)resolve(s)});req.on('error',e=>{if(!done){done=true;reject(e)}})})}
 async function jsonBody(req,max){return JSON.parse(await body(req,max)||'{}')}
 function out(res,n,x,h={}){res.writeHead(n,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...h});res.end(JSON.stringify(x))}
+
 const pub=u=>({id:u.id,name:u.name,profilePhoto:u.profilePhoto||null,createdAt:u.createdAt});
-const find=n=>read(db.users).find(u=>String(u.name||'').toLowerCase()===String(n||'').trim().toLowerCase());
-const blocked=(a,b)=>read(db.blocks).some(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a));
-const adminBlocked=id=>read(db.adminBlocks).some(x=>x&&x.userId===id);
+const find=n=>db.prepare('SELECT * FROM users WHERE LOWER(name)=LOWER(?)').get(String(n||'').trim());
+const blocked=(a,b)=>!!db.prepare('SELECT 1 FROM blocks WHERE (a=? AND b=?) OR (a=? AND b=?)').get(a,b,b,a);
+const adminBlocked=id=>!!db.prepare('SELECT 1 FROM admin_blocks WHERE userId=?').get(id);
 const onlineUserIds=()=>{const now=Date.now(),ids=new Set();for(const [token,id] of sessions){const last=sessionActivity.get(token)||0;if(last&&now-last<=ONLINE_MS&&!adminBlocked(id))ids.add(id)}return ids};
 
 function sniffMime(buf){
   const b=buf;
   const starts=(arr,off=0)=>arr.every((v,i)=>b[off+i]===v);
-  // Images
   if(starts([0xFF,0xD8,0xFF]))return 'image/jpeg';
   if(starts([0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A]))return 'image/png';
   if(starts([0x47,0x49,0x46,0x38]))return 'image/gif';
   if(b.length>=12&&starts([0x52,0x49,0x46,0x46])&&b.slice(8,12).toString('ascii')==='WEBP')return 'image/webp';
-  // Audio
   if(b.length>=12&&starts([0x52,0x49,0x46,0x46])&&b.slice(8,12).toString('ascii')==='WAVE')return 'audio/wav';
-  if(starts([0x4F,0x67,0x67,0x53]))return 'audio/ogg'; // also used for ogg video, refined by container below
+  if(starts([0x4F,0x67,0x67,0x53]))return 'audio/ogg';
   if(starts([0x49,0x44,0x33])||starts([0xFF,0xFB])||starts([0xFF,0xF3])||starts([0xFF,0xF2]))return 'audio/mpeg';
-  // WebM / Matroska (audio or video, EBML header) — used by MediaRecorder audio/webm and video/webm
   if(starts([0x1A,0x45,0xDF,0xA3]))return 'webm';
-  // MP4 / M4A / MOV family (ftyp box)
   if(b.length>=12&&b.slice(4,8).toString('ascii')==='ftyp'){
     const brand=b.slice(8,12).toString('ascii');
     if(/^(M4A |M4B )/.test(brand))return 'audio/mp4';
@@ -58,45 +137,309 @@ function sniffMime(buf){
 }
 function sniffKind(mime){
   if(!mime)return null;
-  if(mime==='webm')return 'webm'; // ambiguous container, checked against declared type's extension instead
+  if(mime==='webm')return 'webm';
   if(mime.startsWith('image/'))return 'image';
   if(mime.startsWith('audio/'))return 'audio';
   if(mime.startsWith('video/'))return 'video';
   return null;
 }
+
 async function api(req,res,u){
- if(req.method==='POST'&&(u.pathname==='/api/register'||u.pathname==='/api/login')){const rateKey='login:'+clientKey(req);const rl=checkRate(rateKey);if(rl.blocked)return out(res,429,{error:'Trop de tentatives. Réessayez dans '+Math.ceil(rl.retryAfter/60)+' minute(s).'});let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const name=String(d.name||'').trim().slice(0,30),p=String(d.password||'');if(!name||p.length<4)return out(res,400,{error:'Nom et mot de passe requis (mot de passe : 4 caractères minimum)'});let users=read(db.users),x=find(name);if(u.pathname==='/api/register'){if(x){registerFailure(rateKey);return out(res,409,{error:'Ce nom existe déjà'})}const s=salt();x={id:uid(),name,salt:s,passwordHash:hash(p,s),createdAt:Date.now(),profilePhoto:null};users.push(x);write(db.users,users)}else if(!x||!safeEqual(hash(p,x.salt),x.passwordHash)){registerFailure(rateKey);return out(res,401,{error:'Nom ou mot de passe incorrect'})}else if(adminBlocked(x.id))return out(res,403,{error:'Compte bloqué par l’administrateur'});registerSuccess(rateKey);const t=uid();sessions.set(t,x.id);sessionActivity.set(t,Date.now());saveSessionFile();return out(res,200,{ok:true,user:pub(x)},{'Set-Cookie':cookie('nova_session',t,req)})}
- if(req.method==='POST'&&u.pathname==='/api/logout'){const t=cookies(req).nova_session||req.headers['x-token'];if(t){sessions.delete(t);sessionActivity.delete(t)}saveSessionFile();return out(res,200,{ok:true},{'Set-Cookie':clearCookie('nova_session',req)})}
- if(req.method==='GET'&&u.pathname==='/api/health')return out(res,200,{ok:true,users:read(db.users).length,messages:read(db.messages).length,sessions:sessions.size,onlineCount:onlineUserIds().size});
- if(req.method==='POST'&&u.pathname==='/api/admin/login'){const rateKey='admin:'+clientKey(req);const rl=checkRate(rateKey);if(rl.blocked)return out(res,429,{error:'Trop de tentatives. Réessayez dans '+Math.ceil(rl.retryAfter/60)+' minute(s).'});let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const cfg=read(db.admin);if(!cfg||!safeEqual(hash(String(d.password||''),cfg.salt),cfg.passwordHash)){registerFailure(rateKey);return out(res,401,{error:'Mot de passe admin incorrect'})}registerSuccess(rateKey);const t=uid();adminSessions.set(t,{expiresAt:Date.now()+SESSION_MS});saveAdminSessions();return out(res,200,{ok:true,authenticated:true,adminToken:t,mustChangePassword:!!cfg.mustChange},{'Set-Cookie':cookie('nova_admin',t,req)})}
- if(req.method==='POST'&&u.pathname==='/api/admin/logout'){const t=cookies(req).nova_admin;if(t)adminSessions.delete(t);saveAdminSessions();return out(res,200,{ok:true},{'Set-Cookie':clearCookie('nova_admin',req)})}
+ if(req.method==='POST'&&(u.pathname==='/api/register'||u.pathname==='/api/login')){
+   const rateKey='login:'+clientKey(req);const rl=checkRate(rateKey);
+   if(rl.blocked)return out(res,429,{error:'Trop de tentatives. Réessayez dans '+Math.ceil(rl.retryAfter/60)+' minute(s).'});
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const name=String(d.name||'').trim().slice(0,30),p=String(d.password||'');
+   if(!name||p.length<4)return out(res,400,{error:'Nom et mot de passe requis (mot de passe : 4 caractères minimum)'});
+   let x=find(name);
+   if(u.pathname==='/api/register'){
+     if(x){registerFailure(rateKey);return out(res,409,{error:'Ce nom existe déjà'})}
+     const s=salt();
+     x={id:uid(),name,salt:s,passwordHash:hash(p,s),createdAt:Date.now(),profilePhoto:null};
+     db.prepare('INSERT INTO users(id,name,salt,passwordHash,profilePhoto,createdAt) VALUES(?,?,?,?,?,?)')
+       .run(x.id,x.name,x.salt,x.passwordHash,x.profilePhoto,x.createdAt);
+   }else if(!x||!safeEqual(hash(p,x.salt),x.passwordHash)){
+     registerFailure(rateKey);return out(res,401,{error:'Nom ou mot de passe incorrect'});
+   }else if(adminBlocked(x.id))return out(res,403,{error:'Compte bloqué par l\u2019administrateur'});
+   registerSuccess(rateKey);
+   const t=uid();sessions.set(t,x.id);sessionActivity.set(t,Date.now());
+   return out(res,200,{ok:true,user:pub(x)},{'Set-Cookie':cookie('nova_session',t,req)});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/logout'){const t=cookies(req).nova_session||req.headers['x-token'];if(t){sessions.delete(t);sessionActivity.delete(t)}return out(res,200,{ok:true},{'Set-Cookie':clearCookie('nova_session',req)})}
+ if(req.method==='GET'&&u.pathname==='/api/health'){
+   const usersCount=db.prepare('SELECT COUNT(*) c FROM users').get().c;
+   const msgsCount=db.prepare('SELECT COUNT(*) c FROM messages').get().c;
+   return out(res,200,{ok:true,users:usersCount,messages:msgsCount,sessions:sessions.size,onlineCount:onlineUserIds().size});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/admin/login'){
+   const rateKey='admin:'+clientKey(req);const rl=checkRate(rateKey);
+   if(rl.blocked)return out(res,429,{error:'Trop de tentatives. Réessayez dans '+Math.ceil(rl.retryAfter/60)+' minute(s).'});
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const cfg=db.prepare('SELECT * FROM admin WHERE id=1').get();
+   if(!cfg||!safeEqual(hash(String(d.password||''),cfg.salt),cfg.passwordHash)){registerFailure(rateKey);return out(res,401,{error:'Mot de passe admin incorrect'})}
+   registerSuccess(rateKey);
+   const t=uid();adminSessions.set(t,{expiresAt:Date.now()+SESSION_MS});
+   return out(res,200,{ok:true,authenticated:true,adminToken:t,mustChangePassword:!!cfg.mustChange},{'Set-Cookie':cookie('nova_admin',t,req)});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/admin/logout'){const t=cookies(req).nova_admin;if(t)adminSessions.delete(t);return out(res,200,{ok:true},{'Set-Cookie':clearCookie('nova_admin',req)})}
  if(req.method==='GET'&&u.pathname==='/api/admin/me'){const a=adminMe(req);return out(res,200,{ok:a,authenticated:a})}
- if(req.method==='GET'&&u.pathname==='/api/admin/stats'){if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});const users=read(db.users),msgs=read(db.messages),onlineIds=onlineUserIds();let media=0;try{media=fs.readdirSync(path.join(ROOT,'media')).length}catch{}const activeUsers=[...onlineIds].map(id=>users.find(x=>x.id===id)).filter(Boolean).map(pub);const pairs={};msgs.slice(-300).forEach(m=>{const ids=[m.from,m.to].sort();const k=ids.join('::');if(!pairs[k]){const ua=users.find(v=>v.id===ids[0]),ub=users.find(v=>v.id===ids[1]);pairs[k]={from:ids[0],to:ids[1],count:0,fromName:ua?.name||m.fromName,toName:ub?.name||m.toName,conversation:(ua?.name||m.fromName)+' ↔ '+(ub?.name||m.toName)};}pairs[k].count++});return out(res,200,{users:users.map(v=>({...pub(v),adminBlocked:adminBlocked(v.id),online:onlineIds.has(v.id)})),stats:{users:users.length,messages:msgs.length,activeSessions:onlineIds.size,mediaFiles:media,conversations:Object.values(pairs)},activeUserIds:[...onlineIds],conversations:Object.values(pairs)})}
- if(req.method==='GET'&&u.pathname==='/api/admin/all-messages'){if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});const users=read(db.users),msgs=read(db.messages);const byId=new Map(users.map(v=>[v.id,v]));const enriched=msgs.map(m=>{const from=byId.get(m.from),to=byId.get(m.to);return {...m,fromName:from?.name||m.fromName||m.from,toName:to?.name||m.toName||m.to,fromUser:from?pub(from):null,toUser:to?pub(to):null,mediaAvailable:!!(m.mediaUrl&&fs.existsSync(path.resolve(ROOT,String(m.mediaUrl).replace(/^\/+/,''))))}});return out(res,200,{messages:enriched,count:enriched.length,file:'messages.json'})} if(req.method==='GET'&&(u.pathname==='/api/admin/conversation'||u.pathname==='/api/admin/messages')){if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});let a=u.searchParams.get('a')||u.searchParams.get('from'),b=u.searchParams.get('b')||u.searchParams.get('to');const users=read(db.users);const resolve=v=>{if(!v)return null;return users.find(q=>q.id===v)||users.find(q=>String(q.name).toLowerCase()===String(v).toLowerCase())||null};const ua=resolve(a),ub=resolve(b);if(!ua||!ub)return out(res,404,{error:'Participants introuvables'});const messages=read(db.messages).filter(m=>(m.from===ua.id&&m.to===ub.id)||(m.from===ub.id&&m.to===ua.id));return out(res,200,{messages,participants:{a:pub(ua),b:pub(ub)}})}
- if(req.method==='POST'&&u.pathname==='/api/admin/delete-user'){if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const cfg=read(db.admin);if(!d.adminPassword||!cfg||!safeEqual(hash(String(d.adminPassword),cfg.salt),cfg.passwordHash))return out(res,403,{error:'ADMIN_PASSWORD_REQUIRED'});const users=read(db.users);const target=users.find(v=>v.id===String(d.userId||''))||users.find(v=>String(v.name||'').toLowerCase()===String(d.name||'').trim().toLowerCase());if(!target)return out(res,404,{error:'Utilisateur introuvable'});const id=target.id;const msgs=read(db.messages);const related=msgs.filter(m=>m.from===id||m.to===id);let deletedMedia=0;for(const m of related){if(m.mediaUrl){const rel=String(m.mediaUrl).split('?')[0].replace(/^\//,'');const file=path.resolve(ROOT,rel);if(file.startsWith(path.resolve(ROOT,'media')+path.sep)){try{if(fs.existsSync(file)){fs.unlinkSync(file);deletedMedia++}}catch{}}}}for(const f of [target.profilePhoto]){if(f){const rel=String(f).split('?')[0].replace(/^\//,'');const file=path.resolve(ROOT,rel);if(file.startsWith(path.resolve(ROOT,'profiles')+path.sep)){try{if(fs.existsSync(file))fs.unlinkSync(file)}catch{}}}}write(db.users,users.filter(v=>v.id!==id));write(db.messages,msgs.filter(m=>m.from!==id&&m.to!==id));write(db.blocks,read(db.blocks).filter(v=>v.a!==id&&v.b!==id));write(db.notifications,read(db.notifications).filter(v=>v.to!==id&&v.fromId!==id));write(db.adminBlocks,read(db.adminBlocks).filter(v=>v.userId!==id));for(const [t,uidv] of [...sessions])if(uidv===id){sessions.delete(t);sessionActivity.delete(t)}saveSessionFile();return out(res,200,{ok:true,deletedUser:{id,name:target.name},deletedMessages:related.length,deletedMedia})}
- if(req.method==='POST'&&u.pathname==='/api/admin/delete-media'){if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});let deleted=0;const dir=path.join(ROOT,'media');try{for(const name of fs.readdirSync(dir)){const file=path.join(dir,name);try{if(fs.statSync(file).isFile()){fs.unlinkSync(file);deleted++}}catch{}}}catch{}const msgs=read(db.messages);let changed=0;msgs.forEach(m=>{if(m.mediaUrl){m.mediaUrl=null;m.mime=null;if(m.type!=='deleted'){m.text=m.text||'';m.type='text'}changed++}});write(db.messages,msgs);return out(res,200,{ok:true,deletedMedia:deleted,updatedMessages:changed})}
- if(req.method==='POST'&&u.pathname==='/api/admin/block'){if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const users=read(db.users),target=users.find(v=>v.id===String(d.userId||''))||users.find(v=>String(v.name).toLowerCase()===String(d.name||'').toLowerCase());if(!target)return out(res,404,{error:'Utilisateur introuvable'});const id=target.id;let a=read(db.adminBlocks).filter(v=>v.userId!==id);if(d.block!==false)a.push({userId:id,createdAt:Date.now()});write(db.adminBlocks,a);if(d.block!==false){for(const [t,uidv] of [...sessions])if(uidv===id){sessions.delete(t);sessionActivity.delete(t)}saveSessionFile()}return out(res,200,{ok:true,blocked:adminBlocked(id)})}
- if(req.method==='POST'&&u.pathname==='/api/admin/password'){if(!adminMe(req))return out(res,401,{error:'Accès admin requis'});let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const cfg=read(db.admin),old=String(d.currentPassword??d.current??''),nw=String(d.newPassword??d.next??'');if(!cfg||!safeEqual(hash(old,cfg.salt),cfg.passwordHash))return out(res,403,{error:'Mot de passe actuel incorrect'});if(nw.length<4)return out(res,400,{error:'Le nouveau mot de passe doit contenir au moins 4 caractères'});const s=salt();write(db.admin,{salt:s,passwordHash:hash(nw,s),updatedAt:Date.now(),mustChange:false});return out(res,200,{ok:true})}
- const x=me(req);if(u.pathname.startsWith('/api/')&&!x)return out(res,401,{error:'Non connecté'});if(u.pathname.startsWith('/api/game/'))return game.api(req,res,u,x,{jsonBody,out,find,blocked,uid,addMessage:(m,to,from)=>{const a=read(db.messages);a.push(m);write(db.messages,a);const n=read(db.notifications);n.push({id:uid(),to:to.id,fromId:from.id,fromName:from.name,createdAt:Date.now(),read:false});write(db.notifications,n)}});
+ if(req.method==='GET'&&u.pathname==='/api/admin/stats'){
+   if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});
+   const users=db.prepare('SELECT * FROM users').all();
+   const msgs=db.prepare('SELECT * FROM messages ORDER BY createdAt DESC LIMIT 300').all();
+   const onlineIds=onlineUserIds();
+   let media=0;try{media=fs.readdirSync(path.join(ROOT,'media')).length}catch{}
+   const pairs={};
+   msgs.forEach(m=>{
+     const ids=[m.from,m.to].sort();const k=ids.join('::');
+     if(!pairs[k]){
+       const ua=users.find(v=>v.id===ids[0]),ub=users.find(v=>v.id===ids[1]);
+       pairs[k]={from:ids[0],to:ids[1],count:0,fromName:ua?.name||m.fromName,toName:ub?.name||m.toName,conversation:(ua?.name||m.fromName)+' ↔ '+(ub?.name||m.toName)};
+     }
+     pairs[k].count++;
+   });
+   return out(res,200,{
+     users:users.map(v=>({...pub(v),adminBlocked:adminBlocked(v.id),online:onlineIds.has(v.id)})),
+     stats:{users:users.length,messages:msgs.length,activeSessions:onlineIds.size,mediaFiles:media,conversations:Object.values(pairs)},
+     activeUserIds:[...onlineIds],conversations:Object.values(pairs)
+   });
+ }
+ if(req.method==='GET'&&u.pathname==='/api/admin/all-messages'){
+   if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});
+   const users=db.prepare('SELECT * FROM users').all();
+   const byId=new Map(users.map(v=>[v.id,v]));
+   const msgs=db.prepare('SELECT * FROM messages ORDER BY createdAt ASC').all();
+   const enriched=msgs.map(m=>{
+     const from=byId.get(m.from),to=byId.get(m.to);
+     return {...m,fromName:from?.name||m.fromName||m.from,toName:to?.name||m.toName||m.to,
+       fromUser:from?pub(from):null,toUser:to?pub(to):null,
+       mediaAvailable:!!(m.mediaUrl&&fs.existsSync(path.resolve(ROOT,String(m.mediaUrl).replace(/^\/+/,''))))};
+   });
+   return out(res,200,{messages:enriched,count:enriched.length});
+ }
+ if(req.method==='GET'&&(u.pathname==='/api/admin/conversation'||u.pathname==='/api/admin/messages')){
+   if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});
+   let a=u.searchParams.get('a')||u.searchParams.get('from'),b=u.searchParams.get('b')||u.searchParams.get('to');
+   const resolve=v=>{if(!v)return null;return db.prepare('SELECT * FROM users WHERE id=? OR LOWER(name)=LOWER(?)').get(v,v)||null};
+   const ua=resolve(a),ub=resolve(b);
+   if(!ua||!ub)return out(res,404,{error:'Participants introuvables'});
+   const messages=db.prepare('SELECT * FROM messages WHERE ("from"=? AND "to"=?) OR ("from"=? AND "to"=?) ORDER BY createdAt ASC').all(ua.id,ub.id,ub.id,ua.id);
+   return out(res,200,{messages,participants:{a:pub(ua),b:pub(ub)}});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/admin/delete-user'){
+   if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const cfg=db.prepare('SELECT * FROM admin WHERE id=1').get();
+   if(!d.adminPassword||!cfg||!safeEqual(hash(String(d.adminPassword),cfg.salt),cfg.passwordHash))return out(res,403,{error:'ADMIN_PASSWORD_REQUIRED'});
+   const target=db.prepare('SELECT * FROM users WHERE id=? OR LOWER(name)=LOWER(?)').get(String(d.userId||''),String(d.name||'').trim());
+   if(!target)return out(res,404,{error:'Utilisateur introuvable'});
+   const id=target.id;
+   const related=db.prepare('SELECT * FROM messages WHERE "from"=? OR "to"=?').all(id,id);
+   let deletedMedia=0;
+   for(const m of related){
+     if(m.mediaUrl){
+       const rel=String(m.mediaUrl).split('?')[0].replace(/^\//,'');
+       const file=path.resolve(ROOT,rel);
+       if(file.startsWith(path.resolve(ROOT,'media')+path.sep)){try{if(fs.existsSync(file)){fs.unlinkSync(file);deletedMedia++}}catch{}}
+     }
+   }
+   if(target.profilePhoto){
+     const rel=String(target.profilePhoto).split('?')[0].replace(/^\//,'');
+     const file=path.resolve(ROOT,rel);
+     if(file.startsWith(path.resolve(ROOT,'profiles')+path.sep)){try{if(fs.existsSync(file))fs.unlinkSync(file)}catch{}}
+   }
+   db.prepare('DELETE FROM users WHERE id=?').run(id);
+   db.prepare('DELETE FROM messages WHERE "from"=? OR "to"=?').run(id,id);
+   db.prepare('DELETE FROM blocks WHERE a=? OR b=?').run(id,id);
+   db.prepare('DELETE FROM notifications WHERE "to"=? OR fromId=?').run(id,id);
+   db.prepare('DELETE FROM admin_blocks WHERE userId=?').run(id);
+   for(const [t,uidv] of [...sessions])if(uidv===id){sessions.delete(t);sessionActivity.delete(t)}
+   return out(res,200,{ok:true,deletedUser:{id,name:target.name},deletedMessages:related.length,deletedMedia});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/admin/delete-media'){
+   if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});
+   let deleted=0;const dir=path.join(ROOT,'media');
+   try{for(const name of fs.readdirSync(dir)){const file=path.join(dir,name);try{if(fs.statSync(file).isFile()){fs.unlinkSync(file);deleted++}}catch{}}}catch{}
+   const info=db.prepare("UPDATE messages SET mediaUrl=NULL, mime=NULL, type=CASE WHEN type!='deleted' THEN 'text' ELSE type END WHERE mediaUrl IS NOT NULL").run();
+   return out(res,200,{ok:true,deletedMedia:deleted,updatedMessages:info.changes});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/admin/block'){
+   if(!adminMe(req))return out(res,401,{error:'ADMIN_AUTH_REQUIRED'});
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const target=db.prepare('SELECT * FROM users WHERE id=? OR LOWER(name)=LOWER(?)').get(String(d.userId||''),String(d.name||''));
+   if(!target)return out(res,404,{error:'Utilisateur introuvable'});
+   const id=target.id;
+   db.prepare('DELETE FROM admin_blocks WHERE userId=?').run(id);
+   if(d.block!==false)db.prepare('INSERT INTO admin_blocks(userId,createdAt) VALUES(?,?)').run(id,Date.now());
+   if(d.block!==false){for(const [t,uidv] of [...sessions])if(uidv===id){sessions.delete(t);sessionActivity.delete(t)}}
+   return out(res,200,{ok:true,blocked:adminBlocked(id)});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/admin/password'){
+   if(!adminMe(req))return out(res,401,{error:'Accès admin requis'});
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const cfg=db.prepare('SELECT * FROM admin WHERE id=1').get();
+   const old=String(d.currentPassword??d.current??''),nw=String(d.newPassword??d.next??'');
+   if(!cfg||!safeEqual(hash(old,cfg.salt),cfg.passwordHash))return out(res,403,{error:'Mot de passe actuel incorrect'});
+   if(nw.length<4)return out(res,400,{error:'Le nouveau mot de passe doit contenir au moins 4 caractères'});
+   const s=salt();
+   db.prepare('UPDATE admin SET salt=?, passwordHash=?, updatedAt=?, mustChange=0 WHERE id=1').run(s,hash(nw,s),Date.now());
+   return out(res,200,{ok:true});
+ }
+ const x=me(req);if(u.pathname.startsWith('/api/')&&!x)return out(res,401,{error:'Non connecté'});
  if(req.method==='GET'&&u.pathname==='/api/me')return out(res,200,{user:pub(x)});
- if(req.method==='POST'&&u.pathname==='/api/profile/password'){let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const current=String(d.currentPassword||'');const next=String(d.newPassword||'');if(!current||!next)return out(res,400,{error:'Mot de passe actuel et nouveau mot de passe requis'});if(next.length<4)return out(res,400,{error:'Le nouveau mot de passe doit contenir au moins 4 caractères'});const users=read(db.users),v=users.find(q=>q.id===x.id);if(!v||!safeEqual(hash(current,v.salt),v.passwordHash))return out(res,403,{error:'Mot de passe actuel incorrect'});const s=salt();v.salt=s;v.passwordHash=hash(next,s);write(db.users,users);return out(res,200,{ok:true})}
- if(req.method==='POST'&&u.pathname==='/api/profile/name'){let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const name=String(d.name||'').trim().slice(0,30);if(!/^[\p{L}0-9 _.-]{2,30}$/u.test(name))return out(res,400,{error:'Nom invalide (2 à 30 caractères)'});const e=find(name);if(e&&e.id!==x.id)return out(res,409,{error:'Ce nom existe déjà'});const users=read(db.users),v=users.find(q=>q.id===x.id);if(!v)return out(res,404,{error:'Compte introuvable'});v.name=name;write(db.users,users);const msgs=read(db.messages);msgs.forEach(m=>{if(m.from===x.id)m.fromName=name;if(m.to===x.id)m.toName=name});write(db.messages,msgs);x.name=name;return out(res,200,{ok:true,user:pub(x)})}
+ if(req.method==='POST'&&u.pathname==='/api/profile/password'){
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const current=String(d.currentPassword||''),next=String(d.newPassword||'');
+   if(!current||!next)return out(res,400,{error:'Mot de passe actuel et nouveau mot de passe requis'});
+   if(next.length<4)return out(res,400,{error:'Le nouveau mot de passe doit contenir au moins 4 caractères'});
+   const v=db.prepare('SELECT * FROM users WHERE id=?').get(x.id);
+   if(!v||!safeEqual(hash(current,v.salt),v.passwordHash))return out(res,403,{error:'Mot de passe actuel incorrect'});
+   const s=salt();
+   db.prepare('UPDATE users SET salt=?, passwordHash=? WHERE id=?').run(s,hash(next,s),x.id);
+   return out(res,200,{ok:true});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/profile/name'){
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const name=String(d.name||'').trim().slice(0,30);
+   if(!/^[\p{L}0-9 _.-]{2,30}$/u.test(name))return out(res,400,{error:'Nom invalide (2 à 30 caractères)'});
+   const e=find(name);if(e&&e.id!==x.id)return out(res,409,{error:'Ce nom existe déjà'});
+   db.prepare('UPDATE users SET name=? WHERE id=?').run(name,x.id);
+   db.prepare('UPDATE messages SET fromName=? WHERE "from"=?').run(name,x.id);
+   db.prepare('UPDATE messages SET toName=? WHERE "to"=?').run(name,x.id);
+   x.name=name;
+   return out(res,200,{ok:true,user:pub(x)});
+ }
  if(req.method==='GET'&&u.pathname==='/api/user'){const o=find(u.searchParams.get('name'));if(!o)return out(res,404,{error:'Utilisateur introuvable'});return out(res,200,pub(o))}
- if(req.method==='GET'&&u.pathname==='/api/users'){const q=String(u.searchParams.get('q')||'').toLowerCase();const online=onlineUserIds();return out(res,200,{onlineCount:online.size,otherOnlineCount:[...online].filter(id=>id!==x.id).length,users:read(db.users).filter(v=>v.id!==x.id&&String(v.name||'').toLowerCase().includes(q)).slice(0,50).map(v=>({...pub(v),online:online.has(v.id),blocked:blocked(x.id,v.id)}))})}
+ if(req.method==='GET'&&u.pathname==='/api/users'){
+   const q=String(u.searchParams.get('q')||'').toLowerCase();
+   const online=onlineUserIds();
+   const all=db.prepare('SELECT * FROM users').all().filter(v=>v.id!==x.id&&String(v.name||'').toLowerCase().includes(q)).slice(0,50);
+   return out(res,200,{onlineCount:online.size,otherOnlineCount:[...online].filter(id=>id!==x.id).length,
+     users:all.map(v=>({...pub(v),online:online.has(v.id),blocked:blocked(x.id,v.id)}))});
+ }
  if(req.method==='GET'&&u.pathname==='/api/block/status'){const o=find(u.searchParams.get('name'));if(!o)return out(res,404,{error:'Utilisateur introuvable'});return out(res,200,{blocked:blocked(x.id,o.id)})}
- if(req.method==='GET'&&u.pathname==='/api/messages'){const o=find(u.searchParams.get('with'));if(!o)return out(res,404,{error:'Utilisateur introuvable'});if(blocked(x.id,o.id))return out(res,200,{messages:[],blocked:true});const a=read(db.messages).filter(m=>((m.from===x.id&&m.to===o.id)||(m.from===o.id&&m.to===x.id))&&!(m.deletedFor||[]).includes(x.id));return out(res,200,{messages:a.slice(-300),blocked:false})}
- if(req.method==='POST'&&u.pathname==='/api/send'){let d;try{d=await jsonBody(req,MAX_BODY_BYTES)}catch{return out(res,400,{error:'Données invalides ou trop volumineuses'})}const to=find(d.to);if(!to)return out(res,404,{error:'Utilisateur introuvable'});if(blocked(x.id,to.id))return out(res,403,{error:'Conversation bloquée'});const m={id:uid(),from:x.id,fromName:x.name,to:to.id,toName:to.name,text:String(d.text||'').slice(0,5000),type:'text',mediaUrl:null,createdAt:Date.now(),deletedFor:[]};if(d.media&&String(d.media.data||'').startsWith('data:')){const raw=String(d.media.data),approx=Math.floor(raw.length*3/4),inputMime=String(d.media.mime||'').toLowerCase();if(inputMime.startsWith('video/')&&approx>MAX_VIDEO_BYTES)return out(res,413,{error:'Vidéo trop volumineuse (60 Mo maximum)'});if(!inputMime.startsWith('image/')&&!inputMime.startsWith('audio/')&&!inputMime.startsWith('video/'))return out(res,415,{error:'Type de média non autorisé'});const z=raw.match(/^data:([^,]*?);base64,(.+)$/s);if(!z)return out(res,400,{error:'Média invalide'});const mime=z[1].toLowerCase().split(';')[0].trim(),map={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','audio/webm':'weba','audio/ogg':'oga','audio/mp4':'m4a','audio/wav':'wav','audio/wave':'wav','audio/x-wav':'wav','audio/mpeg':'mp3','audio/mp3':'mp3','audio/aac':'aac','audio/x-m4a':'m4a','video/mp4':'mp4','video/webm':'webm','video/ogg':'ogv','video/quicktime':'mov'};if(!map[mime])return out(res,415,{error:'Type de média non autorisé'});const buf=Buffer.from(z[2],'base64');if(!buf.length)return out(res,400,{error:'Média vide'});const sniffed=sniffMime(buf);const declaredKind=sniffKind(mime);const actualKind=sniffed==='webm'?declaredKind:sniffKind(sniffed);if(!sniffed||actualKind!==declaredKind)return out(res,415,{error:'Le contenu du fichier ne correspond pas au type déclaré'});const ext=map[mime],fn=m.id+'.'+ext;fs.writeFileSync(path.join(ROOT,'media',fn),buf);m.type=mime.startsWith('audio/')?'audio':mime.startsWith('video/')?'video':'image';m.mediaUrl='/media/'+fn;m.mime=mime}const a=read(db.messages);a.push(m);write(db.messages,a);const n=read(db.notifications);n.push({id:uid(),to:to.id,fromId:x.id,fromName:x.name,createdAt:Date.now(),read:false});write(db.notifications,n);return out(res,200,{ok:true,message:m})}
- if(req.method==='POST'&&u.pathname==='/api/delete'){let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const a=read(db.messages),m=a.find(v=>v.id===String(d.id||''));if(!m)return out(res,404,{error:'Message introuvable'});if(m.from!==x.id&&m.to!==x.id)return out(res,403,{error:'Accès refusé'});if(d.mode==='everyone'){if(m.from!==x.id)return out(res,403,{error:'Seul l’auteur peut supprimer pour tout le monde'});m.text='Message supprimé';m.type='deleted';m.mediaUrl=null;m.mime=null;m.deletedFor=[];m.deletedEverywhere=true}else{m.deletedFor=[...new Set([...(m.deletedFor||[]),x.id])]}write(db.messages,a);return out(res,200,{ok:true})}
- if(req.method==='POST'&&u.pathname==='/api/block'){let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}const o=find(d.name);if(!o)return out(res,404,{error:'Utilisateur introuvable'});let a=read(db.blocks).filter(v=>!(v.a===x.id&&v.b===o.id));if(d.block!==false)a.push({a:x.id,b:o.id,createdAt:Date.now()});write(db.blocks,a);return out(res,200,{ok:true,blocked:blocked(x.id,o.id)})}
- if(req.method==='GET'&&u.pathname==='/api/notifications')return out(res,200,{notifications:read(db.notifications).filter(n=>n.to===x.id).slice(-100).reverse()});
- if(req.method==='POST'&&u.pathname==='/api/notifications/read'){const a=read(db.notifications);a.forEach(n=>{if(n.to===x.id)n.read=true});write(db.notifications,a);return out(res,200,{ok:true})}
- if(req.method==='POST'&&u.pathname==='/api/profile/photo'){let d;try{d=await jsonBody(req,12e6)}catch{return out(res,400,{error:'Image trop volumineuse ou données invalides'})}const z=String(d.data||'').match(/^data:image\/([^;]+);base64,(.+)$/s);if(!z)return out(res,400,{error:'Image invalide'});const ext=z[1].replace(/[^a-z0-9]/gi,'').toLowerCase()||'png',fn=x.id+'.'+ext;fs.writeFileSync(path.join(ROOT,'profiles',fn),Buffer.from(z[2],'base64'));const a=read(db.users),v=a.find(q=>q.id===x.id);if(!v)return out(res,404,{error:'Compte introuvable'});v.profilePhoto='/profiles/'+fn+'?v='+Date.now();write(db.users,a);x.profilePhoto=v.profilePhoto;return out(res,200,{profilePhoto:x.profilePhoto})}
- return out(res,404,{error:'Route introuvable'})
+ if(req.method==='GET'&&u.pathname==='/api/messages'){
+   const o=find(u.searchParams.get('with'));if(!o)return out(res,404,{error:'Utilisateur introuvable'});
+   if(blocked(x.id,o.id))return out(res,200,{messages:[],blocked:true});
+   const rows=db.prepare('SELECT * FROM messages WHERE (("from"=? AND "to"=?) OR ("from"=? AND "to"=?)) ORDER BY createdAt ASC').all(x.id,o.id,o.id,x.id);
+   const visible=rows.filter(m=>!JSON.parse(m.deletedFor||'[]').includes(x.id)).slice(-300);
+   return out(res,200,{messages:visible,blocked:false});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/send'){
+   let d;try{d=await jsonBody(req,MAX_BODY_BYTES)}catch{return out(res,400,{error:'Données invalides ou trop volumineuses'})}
+   const to=find(d.to);if(!to)return out(res,404,{error:'Utilisateur introuvable'});
+   if(blocked(x.id,to.id))return out(res,403,{error:'Conversation bloquée'});
+   const m={id:uid(),from:x.id,fromName:x.name,to:to.id,toName:to.name,text:String(d.text||'').slice(0,5000),type:'text',mediaUrl:null,mime:null,createdAt:Date.now()};
+   if(d.media&&String(d.media.data||'').startsWith('data:')){
+     const raw=String(d.media.data),approx=Math.floor(raw.length*3/4),inputMime=String(d.media.mime||'').toLowerCase();
+     if(inputMime.startsWith('video/')&&approx>MAX_VIDEO_BYTES)return out(res,413,{error:'Vidéo trop volumineuse (60 Mo maximum)'});
+     if(!inputMime.startsWith('image/')&&!inputMime.startsWith('audio/')&&!inputMime.startsWith('video/'))return out(res,415,{error:'Type de média non autorisé'});
+     const z=raw.match(/^data:([^,]*?);base64,(.+)$/s);if(!z)return out(res,400,{error:'Média invalide'});
+     const mime=z[1].toLowerCase().split(';')[0].trim();
+     const map={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','audio/webm':'weba','audio/ogg':'oga','audio/mp4':'m4a','audio/wav':'wav','audio/wave':'wav','audio/x-wav':'wav','audio/mpeg':'mp3','audio/mp3':'mp3','audio/aac':'aac','audio/x-m4a':'m4a','video/mp4':'mp4','video/webm':'webm','video/ogg':'ogv','video/quicktime':'mov'};
+     if(!map[mime])return out(res,415,{error:'Type de média non autorisé'});
+     const buf=Buffer.from(z[2],'base64');if(!buf.length)return out(res,400,{error:'Média vide'});
+     const sniffed=sniffMime(buf);const declaredKind=sniffKind(mime);const actualKind=sniffed==='webm'?declaredKind:sniffKind(sniffed);
+     if(!sniffed||actualKind!==declaredKind)return out(res,415,{error:'Le contenu du fichier ne correspond pas au type déclaré'});
+     const ext=map[mime],fn=m.id+'.'+ext;
+     fs.writeFileSync(path.join(ROOT,'media',fn),buf);
+     m.type=mime.startsWith('audio/')?'audio':mime.startsWith('video/')?'video':'image';
+     m.mediaUrl='/media/'+fn;m.mime=mime;
+   }
+   db.prepare('INSERT INTO messages(id,"from",fromName,"to",toName,text,type,mediaUrl,mime,createdAt,deletedFor) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+     .run(m.id,m.from,m.fromName,m.to,m.toName,m.text,m.type,m.mediaUrl,m.mime,m.createdAt,'[]');
+   db.prepare('INSERT INTO notifications(id,"to",fromId,fromName,createdAt,read) VALUES(?,?,?,?,?,0)')
+     .run(uid(),to.id,x.id,x.name,Date.now());
+   return out(res,200,{ok:true,message:m});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/delete'){
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const m=db.prepare('SELECT * FROM messages WHERE id=?').get(String(d.id||''));
+   if(!m)return out(res,404,{error:'Message introuvable'});
+   if(m.from!==x.id&&m.to!==x.id)return out(res,403,{error:'Accès refusé'});
+   if(d.mode==='everyone'){
+     if(m.from!==x.id)return out(res,403,{error:'Seul l\u2019auteur peut supprimer pour tout le monde'});
+     db.prepare("UPDATE messages SET text=?, type='deleted', mediaUrl=NULL, mime=NULL, deletedFor='[]', deletedEverywhere=1 WHERE id=?").run('Message supprimé',m.id);
+   }else{
+     const list=new Set(JSON.parse(m.deletedFor||'[]'));list.add(x.id);
+     db.prepare('UPDATE messages SET deletedFor=? WHERE id=?').run(JSON.stringify([...list]),m.id);
+   }
+   return out(res,200,{ok:true});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/block'){
+   let d;try{d=await jsonBody(req,1e5)}catch{return out(res,400,{error:'Données invalides'})}
+   const o=find(d.name);if(!o)return out(res,404,{error:'Utilisateur introuvable'});
+   db.prepare('DELETE FROM blocks WHERE a=? AND b=?').run(x.id,o.id);
+   if(d.block!==false)db.prepare('INSERT INTO blocks(a,b,createdAt) VALUES(?,?,?)').run(x.id,o.id,Date.now());
+   return out(res,200,{ok:true,blocked:blocked(x.id,o.id)});
+ }
+ if(req.method==='GET'&&u.pathname==='/api/notifications'){
+   const rows=db.prepare('SELECT * FROM notifications WHERE "to"=? ORDER BY createdAt DESC LIMIT 100').all(x.id);
+   return out(res,200,{notifications:rows});
+ }
+ if(req.method==='POST'&&u.pathname==='/api/notifications/read'){db.prepare('UPDATE notifications SET read=1 WHERE "to"=?').run(x.id);return out(res,200,{ok:true})}
+ if(req.method==='POST'&&u.pathname==='/api/profile/photo'){
+   let d;try{d=await jsonBody(req,12e6)}catch{return out(res,400,{error:'Image trop volumineuse ou données invalides'})}
+   const z=String(d.data||'').match(/^data:image\/([^;]+);base64,(.+)$/s);
+   if(!z)return out(res,400,{error:'Image invalide'});
+   const buf=Buffer.from(z[2],'base64');
+   const sniffed=sniffMime(buf);
+   if(!sniffed||sniffKind(sniffed)!=='image')return out(res,415,{error:'Le contenu du fichier ne correspond pas à une image'});
+   const ext=z[1].replace(/[^a-z0-9]/gi,'').toLowerCase()||'png',fn=x.id+'.'+ext;
+   fs.writeFileSync(path.join(ROOT,'profiles',fn),buf);
+   const photoUrl='/profiles/'+fn+'?v='+Date.now();
+   db.prepare('UPDATE users SET profilePhoto=? WHERE id=?').run(photoUrl,x.id);
+   x.profilePhoto=photoUrl;
+   return out(res,200,{profilePhoto:x.profilePhoto});
+ }
+ return out(res,404,{error:'Route introuvable'});
 }
-function staticFile(res,p){const root=path.resolve(APP,'public'),file=path.resolve(root,'.'+(p==='/'?'/index.html':p));if(file!==root&&!file.startsWith(root+path.sep)){res.writeHead(403);return res.end('Forbidden')}fs.readFile(file,(e,b)=>{if(!e&&path.basename(file)==='index.html'){b=Buffer.from(b.toString('utf8').replace(/<\/body>/i,'<script src="/novachat-ui.js"></script></body>'))}if(e){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});return res.end('Not found')}const ext=path.extname(file).toLowerCase();if(ext==='.html'&&path.basename(file).toLowerCase()==='index.html'){const addon=`<script>(function(){function init(){var c=document.getElementById('contacts');if(!c||document.getElementById('novaOnlineCount'))return;if(!document.getElementById('novaOnlineStyle')){var st=document.createElement('style');st.id='novaOnlineStyle';st.textContent='#novaOnlineCount{margin:0 14px 8px;padding:9px 12px;border-radius:12px;background:#e8f5e9;color:#176b2c;font:600 14px Arial,sans-serif}';document.head.appendChild(st)}var b=document.createElement('div');b.id='novaOnlineCount';b.textContent='🟢 Utilisateurs en ligne : …';c.parentNode.insertBefore(b,c)}async function update(){var b=document.getElementById('novaOnlineCount');if(!b)return;try{var h=await fetch('/api/health',{cache:'no-store'}).then(function(r){return r.json()});var n=Number(h.onlineCount||0);try{var m=await fetch('/api/me',{cache:'no-store'}).then(function(r){return r.json()});if(m&&m.user)n=Math.max(0,n-1)}catch(e){}b.textContent='🟢 '+n+' autre'+(n>1?'s':'')+' utilisateur'+(n>1?'s':'')+' en ligne';}catch(e){b.textContent='🟢 Utilisateurs en ligne indisponible';}}function start(){init();update();setInterval(update,5000)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start()})();</script>`;b=Buffer.from(b.toString('utf8').replace('</body>',addon+'</body>'),'utf8')}const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'application/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.svg':'image/svg+xml'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Cache-Control':'no-store'});res.end(b)})}
+
+function staticFile(res,p){
+  const root=path.resolve(APP,'public'),file=path.resolve(root,'.'+(p==='/'?'/index.html':p));
+  if(file!==root&&!file.startsWith(root+path.sep)){res.writeHead(403);return res.end('Forbidden')}
+  fs.readFile(file,(e,b)=>{
+    if(e){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});return res.end('Not found')}
+    const ext=path.extname(file).toLowerCase();
+    const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'application/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.svg':'image/svg+xml'};
+    res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Cache-Control':'no-store'});
+    res.end(b);
+  });
+}
+function mediaFile(req,res,p){
+  const root=path.resolve(ROOT),file=path.resolve(root,p.replace(/^\/+/,''));
+  if(file!==root&&!file.startsWith(root+path.sep)){res.writeHead(403);return res.end('Forbidden')}
+  fs.stat(file,(e,s)=>{
+    if(e||!s.isFile()){res.writeHead(404);return res.end('Not found')}
+    const types={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.gif':'image/gif','.webm':'video/webm','.weba':'audio/webm','.mp4':'video/mp4','.ogv':'video/ogg','.mov':'video/quicktime','.m4a':'audio/mp4','.wav':'audio/wav','.oga':'audio/ogg','.ogg':'audio/ogg'};
+    const mime=types[path.extname(file).toLowerCase()]||'application/octet-stream';
+    const size=s.size;const range=req.headers.range;
+    if(!range){res.writeHead(200,{'Content-Type':mime,'Content-Length':size,'Accept-Ranges':'bytes','Cache-Control':'public, max-age=31536000'});return fs.createReadStream(file).pipe(res)}
+    const m=range.match(/bytes=(\\d*)-(\\d*)/);
+    if(!m){res.writeHead(416,{'Content-Range':`bytes */${size}`});return res.end()}
+    let start=m[1]===''?0:Number(m[1]);let end=m[2]===''?size-1:Number(m[2]);
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<start||start>=size){res.writeHead(416,{'Content-Range':`bytes */${size}`});return res.end()}
+    end=Math.min(end,size-1);const len=end-start+1;
+    res.writeHead(206,{'Content-Type':mime,'Content-Length':len,'Content-Range':`bytes ${start}-${end}/${size}`,'Accept-Ranges':'bytes','Cache-Control':'public, max-age=31536000'});
+    fs.createReadStream(file,{start,end}).pipe(res);
+  });
+}
+
 if(process.env.RENDER&&!process.env.DATA_DIR)console.warn('⚠️ ATTENTION : DATA_DIR non défini. Sur Render, les données seront EFFACÉES à chaque redémarrage. Voir LISEZMOI.txt.');
 console.log('Dossier des données :',ROOT);
-ensureFiles();loadSessions();cleanSessions();
-function mediaFile(req,res,p){const root=path.resolve(ROOT),file=path.resolve(root,p.replace(/^\/+/,''));if(file!==root&&!file.startsWith(root+path.sep)){res.writeHead(403);return res.end('Forbidden')}fs.stat(file,(e,s)=>{if(e||!s.isFile()){res.writeHead(404);return res.end('Not found')}const types={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.gif':'image/gif','.webm':'video/webm','.weba':'audio/webm','.mp4':'video/mp4','.ogv':'video/ogg','.mov':'video/quicktime','.m4a':'audio/mp4','.wav':'audio/wav','.oga':'audio/ogg','.ogg':'audio/ogg'};const mime=types[path.extname(file).toLowerCase()]||'application/octet-stream';const size=s.size;const range=req.headers.range;if(!range){res.writeHead(200,{'Content-Type':mime,'Content-Length':size,'Accept-Ranges':'bytes','Cache-Control':'public, max-age=31536000'});return fs.createReadStream(file).pipe(res)}const m=range.match(/bytes=(\d*)-(\d*)/);if(!m){res.writeHead(416,{'Content-Range':`bytes */${size}`});return res.end()}let start=m[1]===''?0:Number(m[1]);let end=m[2]===''?size-1:Number(m[2]);if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<start||start>=size){res.writeHead(416,{'Content-Range':`bytes */${size}`});return res.end()}end=Math.min(end,size-1);const len=end-start+1;res.writeHead(206,{'Content-Type':mime,'Content-Length':len,'Content-Range':`bytes ${start}-${end}/${size}`,'Accept-Ranges':'bytes','Cache-Control':'public, max-age=31536000'});fs.createReadStream(file,{start,end}).pipe(res)})}
-const httpServer=http.createServer(async(req,res)=>{try{const u=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(u.pathname==='/admin')u.pathname='/admin.html';if(u.pathname.startsWith('/api/'))return await api(req,res,u);if(u.pathname.startsWith('/media/')||u.pathname.startsWith('/profiles/'))return mediaFile(req,res,u.pathname);if(u.pathname==='/novachat-ui.js'){const file=path.join(ROOT,'novachat-ui.js');return fs.readFile(file,(e,b)=>{if(!e&&path.basename(file)==='index.html'){b=Buffer.from(b.toString('utf8').replace(/<\/body>/i,'<script src="/novachat-ui.js"></script></body>'))}if(e){res.writeHead(404);return res.end('Not found')}res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'no-store'});res.end(b)})}return staticFile(res,u.pathname)}catch(e){console.error(e);if(!res.headersSent)out(res,500,{error:'Erreur serveur'});else res.end()}}).listen(PORT,HOST,()=>{console.log(`NovaChat V14 sur http://${HOST}:${PORT}`);console.log(`Admin : http://localhost:${PORT}/admin`);});
-game.attachWs(httpServer,{me});
+ensureFiles();
+http.createServer(async(req,res)=>{
+  try{
+    const u=new URL(req.url,`http://${req.headers.host||'localhost'}`);
+    if(u.pathname==='/admin')u.pathname='/admin.html';
+    if(u.pathname.startsWith('/api/'))return await api(req,res,u);
+    if(u.pathname.startsWith('/media/')||u.pathname.startsWith('/profiles/'))return mediaFile(req,res,u.pathname);
+    return staticFile(res,u.pathname);
+  }catch(e){
+    console.error(e);
+    if(!res.headersSent)out(res,500,{error:'Erreur serveur'});else res.end();
+  }
+}).listen(PORT,HOST,()=>{
+  console.log(`NovaChat (SQLite) sur http://${HOST}:${PORT}`);
+  console.log(`Admin : http://localhost:${PORT}/admin`);
+});
