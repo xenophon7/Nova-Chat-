@@ -23,6 +23,18 @@ body.dark{--bg:#0b1020;--card:#151c2e;--txt:#eef2ff;--muted:#aab5ca;--line:#303b
 .voice-progress{padding:0!important;border:0!important;background:transparent!important;height:20px;width:auto}
 .bubble.me .voice-play,.bubble.me .voice-icon{background:#fff;color:var(--p)}
 .bubble.me .voice-progress{accent-color:#fff}
+
+.voice-msg{display:flex;align-items:center;min-width:0}
+.voice-player{display:flex;align-items:center;min-width:215px;max-width:290px}
+.voice-play{display:block;width:40px;height:40px;padding:0;margin:0 9px 0 0;border:0;border-radius:50%;background:#6d4aff;background:var(--p);color:#fff;font-size:15px;line-height:40px;text-align:center;flex:none;font-family:Arial,sans-serif}
+.voice-bar{flex:1;min-width:55px;height:8px;padding:11px 0;box-sizing:content-box;background:#d0d7e2;background-clip:content-box;border-radius:4px;cursor:pointer;margin-right:8px}
+.voice-fill{height:100%;width:0;border-radius:4px;background:#6d4aff;background:var(--p)}
+.voice-duration{font-size:11px;color:#667085;white-space:nowrap;min-width:62px;text-align:right}
+.bubble.me .voice-play{background:#fff;color:#6d4aff;color:var(--p)}
+.bubble.me .voice-bar{background:rgba(255,255,255,.4);background-clip:content-box}
+.bubble.me .voice-fill{background:#fff}
+.bubble.me .voice-duration{color:#eaf2ff}
+.voice-msg audio.voice-native{display:block;width:230px;max-width:100%}
 </style></head>
 <body>
 <div id="auth" class="auth"><div class="auth-card"><div class="logo">A</div><h1 id="authTitle">Connexion</h1><p id="authSub" class="sub">Connecte-toi à Axess Chat</p><div class="form"><input id="name" maxlength="30" placeholder="Nom d'utilisateur" autocomplete="username"><input id="password" type="password" minlength="4" placeholder="Mot de passe" autocomplete="current-password"><input id="password2" class="hidden" type="password" minlength="4" placeholder="Confirmer le mot de passe" autocomplete="new-password"><button id="authBtn" class="primary">Se connecter</button><div id="authErr" class="status"></div></div><div class="switch"><span id="switchText">Pas encore de compte ?</span> <button id="switchBtn">Créer un compte</button></div></div></div>
@@ -38,7 +50,7 @@ function av(el,u){el.innerHTML=u&&u.profilePhoto?`<img src="${u.profilePhoto}">`
 function showProfile(u){if(!u)return;$('#profileViewName').textContent=u.name||'Utilisateur';const box=$('#profileLarge');box.innerHTML='';if(u.profilePhoto){const img=document.createElement('img');img.src=String(u.profilePhoto)+(String(u.profilePhoto).includes('?')?'&':'?')+'view='+Date.now();img.onerror=()=>{box.textContent=(u.name||'?').slice(0,1).toUpperCase()};box.appendChild(img)}else box.textContent=(u.name||'?').slice(0,1).toUpperCase();$('#profileView').classList.remove('hidden')}
 function clearPending(){pendingMedia=null;$('#mediaPreview').classList.remove('show');$('#previewContent').innerHTML='';$('#attachName').textContent='';$('#mediaFile').value=''}
 function prepareMedia(file){if(!file)return;if(file.type.startsWith('video/')&&file.size>60*1024*1024)return alert('Vidéo trop volumineuse : 60 Mo maximum.');if(file.type.startsWith('image/')&&file.size>8*1024*1024)return alert('Photo trop volumineuse : 8 Mo maximum.');pendingMedia=file;$('#attachName').textContent=file.name;const url=URL.createObjectURL(file);$('#previewContent').innerHTML=file.type.startsWith('image/')?`<img src="${url}">`:file.type.startsWith('video/')?`<video src="${url}" controls></video>`:'';$('#mediaPreview').classList.add('show')}
-function fileToData(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+function fileToData(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).replace(/^data:([^;,]+)[^,]*;base64,/,'data:$1;base64,'));r.onerror=reject;r.readAsDataURL(file)})}
 async function api(url,opt={}){opt.headers=Object.assign({'Content-Type':'application/json'},opt.headers||{});const r=await fetch(url,opt);let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||'Erreur serveur');return d}
 function setAuth(mode){authMode=mode;$('#authTitle').textContent=mode==='login'?'Connexion':'Créer un compte';$('#authSub').textContent=mode==='login'?'Connecte-toi à Axess Chat':'Crée ton compte Axess Chat';$('#authBtn').textContent=mode==='login'?'Se connecter':'Créer mon compte';$('#password2').classList.toggle('hidden',mode==='login');$('#switchText').textContent=mode==='login'?'Pas encore de compte ?':'Déjà un compte ?';$('#switchBtn').textContent=mode==='login'?'Créer un compte':'Se connecter';$('#authErr').textContent=''}
 async function boot(){applyTheme();try{const d=await api('/api/me',{cache:'no-store'});if(d.user){me=d.user;showApp();await loadUsers();await loadNotifications()}else showAuth()}catch{showAuth()}$('#online').textContent='🟢 en ligne'}
@@ -77,19 +89,28 @@ function openNotifications(){loadNotifications();$('#notifyPage').classList.add(
 function closeNotifications(){$('#notifyPage').classList.remove('open');loadUsers()}
 
 function mediaKind(m){const t=String(m.type||'').toLowerCase(),mime=String(m.mime||'').toLowerCase(),url=String(m.mediaUrl||'').toLowerCase();if(t==='audio'||mime.startsWith('audio/')||/\.(weba|wav|wave|oga|ogg|m4a|mp3|aac)(?:$|\?)/.test(url))return 'audio';if(t==='video'||mime.startsWith('video/')||/\.(mp4|webm|ogv|mov)(?:$|\?)/.test(url))return 'video';if(t==='image'||mime.startsWith('image/')||/\.(jpg|jpeg|png|webp|gif)(?:$|\?)/.test(url))return 'image';return t}
-function messageHtml(m){if(m.deletedEverywhere||m.type==='deleted')return '<div class="deleted-msg">🗑️ Message supprimé pour tout le monde</div>';let media='',kind=mediaKind(m);if(m.mediaUrl&&kind==='image')media=`<div class="media-msg"><img src="${m.mediaUrl}" loading="lazy" onclick="window.open('${m.mediaUrl}','_blank')"></div>`;else if(m.mediaUrl&&kind==='video')media=`<div class="media-msg"><video src="${m.mediaUrl}" controls preload="metadata" playsinline></video></div>`;else if(m.mediaUrl&&kind==='audio')media=`<div class="media-msg voice-msg"><span class="voice-icon">🎙️</span><div class="voice-player"><audio class="voice-audio" src="${m.mediaUrl}" preload="metadata" playsinline></audio><button type="button" class="voice-play" data-audio="${m.id}" aria-label="Lire le vocal">▶️</button><input class="voice-progress" type="range" min="0" max="100" value="0" step="0.1" data-progress="${m.id}" aria-label="Progression"><span class="voice-duration" data-time="${m.id}">0:00</span></div></div>`;const text=m.text?`<div>${esc(m.text)}</div>`:'';return media+text}
+function messageHtml(m){if(m.deletedEverywhere||m.type==='deleted')return '<div class="deleted-msg">🗑️ Message supprimé pour tout le monde</div>';let media='',kind=mediaKind(m);if(m.mediaUrl&&kind==='image')media=`<div class="media-msg"><img src="${m.mediaUrl}" loading="lazy" onclick="window.open('${m.mediaUrl}','_blank')"></div>`;else if(m.mediaUrl&&kind==='video')media=`<div class="media-msg"><video src="${m.mediaUrl}" controls preload="metadata" playsinline></video></div>`;else if(m.mediaUrl&&kind==='audio')media=`<div class="media-msg voice-msg"><div class="voice-player"><audio class="voice-audio" src="${m.mediaUrl}" preload="metadata" playsinline></audio><button type="button" class="voice-play" aria-label="Lire le vocal">▶</button><div class="voice-bar"><div class="voice-fill"></div></div><span class="voice-duration">0:00</span></div></div>`;const text=m.text?`<div>${esc(m.text)}</div>`:'';return media+text}
 function setupVoicePlayers(){
   document.querySelectorAll('.voice-player').forEach(player=>{
-    const audio=player.querySelector('.voice-audio'), play=player.querySelector('.voice-play'), progress=player.querySelector('.voice-progress'), time=player.querySelector('.voice-duration');
-    if(!audio||!play||!progress)return;
-    const fmt=v=>{v=Number(v)||0;const m=Math.floor(v/60),s=Math.floor(v%60);return m+':'+String(s).padStart(2,'0')};
-    play.onclick=async()=>{try{if(audio.paused){document.querySelectorAll('.voice-audio').forEach(a=>{if(a!==audio){a.pause();const b=a.closest('.voice-player')?.querySelector('.voice-play');if(b)b.textContent='▶️'}});await audio.play();play.textContent='⏸️'}else{audio.pause();play.textContent='▶️'}}catch(e){alert('Impossible de lire ce vocal sur ce navigateur.')}};
-    const normalUpdate=()=>{if(isFinite(audio.duration)&&audio.duration){progress.value=(audio.currentTime/audio.duration)*100;time.textContent=fmt(audio.currentTime)+' / '+fmt(audio.duration)}};
+    if(player.dataset.ready)return;player.dataset.ready='1';
+    const audio=player.querySelector('.voice-audio'),play=player.querySelector('.voice-play'),bar=player.querySelector('.voice-bar'),fill=player.querySelector('.voice-fill'),time=player.querySelector('.voice-duration');
+    if(!audio||!play||!bar)return;
+    const fmt=v=>{v=Number(v)||0;const m=Math.floor(v/60),s=Math.floor(v%60);return m+':'+(s<10?'0':'')+s};
+    const ok=()=>isFinite(audio.duration)&&audio.duration>0;
+    const normalUpdate=()=>{if(ok()){fill.style.width=(audio.currentTime/audio.duration*100)+'%';time.textContent=fmt(audio.currentTime)+' / '+fmt(audio.duration)}};
+    play.onclick=()=>{
+      if(audio.paused){
+        document.querySelectorAll('.voice-audio').forEach(a=>{if(a!==audio&&!a.paused){a.pause();const b=a.parentNode.querySelector('.voice-play');if(b)b.textContent='▶'}});
+        const pr=audio.play();play.textContent='❚❚';
+        if(pr&&pr.catch)pr.catch(()=>{play.textContent='▶';useNative()});
+      }else{audio.pause();play.textContent='▶'}
+    };
+    function useNative(){const src=audio.getAttribute('src');player.innerHTML='<audio class="voice-native" controls preload="metadata" playsinline src="'+src+'"></audio>'}
     audio.onloadedmetadata=()=>{if(audio.duration===Infinity){audio.ontimeupdate=()=>{audio.ontimeupdate=normalUpdate;audio.currentTime=0;time.textContent=fmt(audio.duration)};audio.currentTime=1e101}else time.textContent=fmt(audio.duration)};
     audio.ontimeupdate=normalUpdate;
-    progress.oninput=()=>{if(isFinite(audio.duration)&&audio.duration)audio.currentTime=(Number(progress.value)/100)*audio.duration};
-    audio.onended=()=>{play.textContent='▶️';progress.value=100};
-    audio.onerror=()=>{play.textContent='⚠️'};
+    bar.onclick=e=>{if(!ok())return;const r=bar.getBoundingClientRect();let f=(e.clientX-r.left)/r.width;f=Math.max(0,Math.min(1,f));audio.currentTime=f*audio.duration;normalUpdate()};
+    audio.onended=()=>{play.textContent='▶';fill.style.width='0%';time.textContent=fmt(audio.duration)};
+    audio.onerror=()=>useNative();
   });
 }
 let lastMessageSignature='';
